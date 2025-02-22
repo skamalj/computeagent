@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  computeagent
+
+  SAM Template for computeagent with SQS trigger
+
+Globals:
+  Function:
+    Timeout: 10  # Increased timeout since SQS processing may take longer
+
+Parameters:
+  OpenAISecretName:
+    Type: String
+    Default: "OpenAIAPIKey"
+    Description: "Name of the secret in AWS Secrets Manager"
+  WhatsappAPISecretName:
+    Type: String
+    Default: "WhatsAppAPIToken"
+    Description: "Name of the secret in AWS Secrets Manager for whatsapp token"
+  ComputeAgentQueue:
+    Type: String
+    Default: "arn:aws:sqs:ap-south-1:010526271896:WhatsAppQueue"
+    Description: "Name of the SQS Queue"
+
+Resources:
+  # Lambda Function
+  ComputeAgentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ec2/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          OPENAI_API_KEY: !Sub "{{resolve:secretsmanager:${OpenAISecretName}}}"
+      Events:
+        SQSMessage:
+          Type: SQS
+          Properties:
+            Queue: !Ref ComputeAgentQueue
+            BatchSize: 1  # Adjust based on workload (max 10)
+      Policies:
+        - SQSPollerPolicy:
+            QueueName: "WhatsAppQueue"
+        - AWSSecretsManagerGetSecretValuePolicy: 
+            SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${OpenAISecretName}-*"
+        - AWSSecretsManagerGetSecretValuePolicy: 
+            SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${WhatsappAPISecretName}-*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ec2:StartInstances
+                - ec2:StopInstances
+                - ec2:DescribeInstances
+              Resource: "*"
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:CreateTable
+              - dynamodb:DeleteTable
+              - dynamodb:DescribeTable
+              - dynamodb:UpdateTable
+            Resource: "*"
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+              - dynamodb:GetItem
+              - dynamodb:Scan
+              - dynamodb:Query
+            Resource: "*" # Allow access to all tables in this account
+
+Outputs:
+
+  ComputeAgentFunction:
+    Description: "Compute Agent Lambda Function ARN"
+    Value: !GetAtt ComputeAgentFunction.Arn
+
+  ComputeAgentFunctionIamRole:
+    Description: "IAM Role for Compute Agent Lambda Function"
+    Value: !GetAtt ComputeAgentFunctionRole.Arn
