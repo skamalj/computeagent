@@ -29,12 +29,12 @@ def delete_messages(state, n=10):
     # If the last message to be deleted is an AIMessage, reduce the index by 1 to keep one extra message
     if isinstance(last_to_delete, AIMessage):
         last_to_delete_index -= 1  # Retain one extra message
+        return {"messages": [RemoveMessage(id=m.id) for m in messages[:last_to_delete_index-1]]}
 
     else:  # Handle consecutive ToolMessages
         while last_to_delete_index < len(messages) and isinstance(messages[last_to_delete_index], ToolMessage):
             last_to_delete_index += 1  # Expand deletion to include contiguous ToolMessages
-
-    return {"messages": [RemoveMessage(id=m.id) for m in messages[:last_to_delete_index-1]]}
+        return {"messages": [RemoveMessage(id=m.id) for m in messages[:last_to_delete_index-1]]}
 
     
 def should_continue(state: MessagesState) -> str:
