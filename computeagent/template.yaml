@@ -31,11 +31,13 @@ Resources:
       CodeUri: ec2/
       Handler: app.lambda_handler
       Runtime: python3.12
+      MemorySize: 512
       Architectures:
         - x86_64
       Environment:
         Variables:
           OPENAI_API_KEY: !Sub "{{resolve:secretsmanager:${OpenAISecretName}}}"
+          MODEL_NAME: "gpt-4o"
       Events:
         SQSMessage:
           Type: SQS
@@ -74,6 +76,11 @@ Resources:
               - dynamodb:Scan
               - dynamodb:Query
             Resource: "*" # Allow access to all tables in this account
+        - Statement:
+            Effect: Allow
+            Action:
+              - ce:GetCostAndUsage  # Grants permission to fetch billing data
+            Resource: "*"
 
 Outputs:
 

@@ -3,6 +3,7 @@ from langchain_core.tools import tool
 from utils import get_secret, extract_recipient
 import boto3
 import requests
+from datetime import datetime, timedelta
 
 @tool
 def start_ec2_instance(instance_id):
@@ -14,6 +15,7 @@ def start_ec2_instance(instance_id):
     """ 
     ec2 = boto3.client('ec2')
     ec2.start_instances(InstanceIds=[instance_id])
+    return f"Instance {instance_id} has been started."
 
 @tool
 def stop_ec2_instance(instance_id):
@@ -25,33 +27,35 @@ def stop_ec2_instance(instance_id):
     """ 
     ec2 = boto3.client('ec2')
     ec2.stop_instances(InstanceIds=[instance_id])
+    return f"Instance {instance_id} has been stopped."
 
 # @! create tool to list instanceid and instance name basis the supplied string (can be part of a name)
 
 @tool
-def list_ec2_instances_by_name(search_string=None):
+def list_ec2_instances_by_name():
     """
-    Fetches a list of EC2 instances filtered by a name tag.
-    If no search string is provided, it returns all instances.
+    Fetches a list of EC2 instances with their instance IDs, names, and current status.
 
-    :param search_string: A string to search for in the instance name (optional).
-    :return: A list of dictionaries with instance IDs and names.
+    :return: A list of dictionaries with instance IDs, names, and current status.
     """
     ec2 = boto3.client('ec2')
 
-    # If search_string is provided, use a filter; otherwise, fetch all instances
-    filters = [{'Name': 'tag:Name', 'Values': [f'*{search_string}*']}] if search_string else []
-
-    response = ec2.describe_instances(Filters=filters)
+    response = ec2.describe_instances()
 
     instances = []
     for reservation in response['Reservations']:
         for instance in reservation['Instances']:
             instance_id = instance['InstanceId']
             instance_name = next((tag['Value'] for tag in instance.get('Tags', []) if tag['Key'] == 'Name'), "Unknown")
-            instances.append({'InstanceId': instance_id, 'InstanceName': instance_name})
+            instance_state = instance['State']['Name']  # Fetching instance status
+            instances.append({
+                'InstanceId': instance_id,
+                'InstanceName': instance_name,
+                'InstanceState': instance_state
+            })
 
     return instances
+
 
 
 
@@ -84,3 +88,40 @@ def send_whatsapp_message(recipient, message):
     response = requests.post(url, headers=headers, json=payload)
     return response.json()
 
+@tool
+def get_billing_data(days: int = 30):
+    """
+    Fetches AWS billing data for the given period and provides a full cost breakdown.
+    :param days: Number of days in the past to analyze.
+    :return: Structured billing data.
+    """
+    ce = boto3.client('ce')
+    # Define date range
+    end_date = datetime.utcnow().date()
+    start_date = end_date - timedelta(days=days)
+
+    # Query total cost grouped by service
+    response = ce.get_cost_and_usage(
+        TimePeriod={"Start": str(start_date), "End": str(end_date)},
+        Granularity="MONTHLY",
+        Metrics=["UnblendedCost"],
+        GroupBy=[{"Type": "DIMENSION", "Key": "SERVICE"}]  # Group by service
+    )
+
+    # Extract cost data
+    cost_data = response.get("ResultsByTime", [])[0]["Groups"]
+    service_costs = [
+        {"service": item["Keys"][0], "cost": round(float(item["Metrics"]["UnblendedCost"]["Amount"]), 2)}
+        for item in cost_data
+    ]
+
+    # Total cost
+    total_cost = sum(item["cost"] for item in service_costs)
+
+    return {
+        "total_cost": round(total_cost, 2),
+        "currency": response["ResultsByTime"][0]["Total"]["UnblendedCost"]["Unit"],
+        "service_costs": service_costs,  # Pass all service data to LLM
+        "start_date": str(start_date),
+        "end_date": str(end_date),
+    }
