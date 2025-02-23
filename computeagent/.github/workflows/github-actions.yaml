@@ -15,4 +15,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-2
       - run: sam build --use-container
+        working-directory: computeagent
       - run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
+        working-directory: computeagent
