@@ -1,5 +1,5 @@
 import json
-from tools import start_ec2_instance, stop_ec2_instance, list_ec2_instances_by_name, send_whatsapp_message
+from tools import start_ec2_instance, stop_ec2_instance, list_ec2_instances_by_name, send_whatsapp_message, get_billing_data
 from utils import extract_whatsapp_messages, extract_recipient
 # import requests
 
@@ -13,7 +13,7 @@ import os
 
 
 model = ChatOpenAI(model=os.getenv("MODEL_NAME"), temperature=0)
-tools = [start_ec2_instance, stop_ec2_instance, list_ec2_instances_by_name, send_whatsapp_message]
+tools = [start_ec2_instance, stop_ec2_instance, list_ec2_instances_by_name, send_whatsapp_message, get_billing_data]
 tool_node = ToolNode(tools=tools)
 model_with_tools  = model.bind_tools(tools)
 
