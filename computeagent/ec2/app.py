@@ -6,7 +6,7 @@ from utils import extract_whatsapp_messages, extract_recipient
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.prebuilt import ToolNode
-from langchain_core.messages import SystemMessage, AIMessage
+from langchain_core.messages import SystemMessage, AIMessage, ToolMessage
 from langgraph_dynamodb_checkpoint import DynamoDBSaver
 from langchain_core.messages import RemoveMessage
 import os
