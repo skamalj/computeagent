@@ -17,7 +17,7 @@ tools = [start_ec2_instance, stop_ec2_instance, list_ec2_instances_by_name, send
 tool_node = ToolNode(tools=tools)
 model_with_tools  = model.bind_tools(tools)
 
-def delete_messages(state, n=3):
+def delete_messages(state, n=10):
     messages = state["messages"]
 
     if len(messages) <= n:
@@ -34,7 +34,7 @@ def delete_messages(state, n=3):
         while last_to_delete_index < len(messages) and isinstance(messages[last_to_delete_index], ToolMessage):
             last_to_delete_index += 1  # Expand deletion to include contiguous ToolMessages
 
-    return {"messages": [RemoveMessage(id=m.id) for m in messages[:last_to_delete_index]]}
+    return {"messages": [RemoveMessage(id=m.id) for m in messages[:last_to_delete_index-1]]}
 
     
 def should_continue(state: MessagesState) -> str:
