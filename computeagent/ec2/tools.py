@@ -108,19 +108,27 @@ def get_billing_data(days: int = 30):
         GroupBy=[{"Type": "DIMENSION", "Key": "SERVICE"}]  # Group by service
     )
 
-    # Extract cost data
-    cost_data = response.get("ResultsByTime", [])[0]["Groups"]
+    # Extract total cost and currency
+    total_cost = 0.0
+    currency = "USD"  # Default currency (AWS usually returns USD)
+    
+    if "Total" in response["ResultsByTime"][0]:
+        for metric_key, metric_data in response["ResultsByTime"][0]["Total"].items():
+            if "Amount" in metric_data:
+                total_cost += float(metric_data["Amount"])
+            if "Unit" in metric_data:
+                currency = metric_data["Unit"]
+
+    # Extract cost breakdown by service
+    cost_data = response["ResultsByTime"][0].get("Groups", [])
     service_costs = [
         {"service": item["Keys"][0], "cost": round(float(item["Metrics"]["UnblendedCost"]["Amount"]), 2)}
-        for item in cost_data
+        for item in cost_data if "UnblendedCost" in item["Metrics"]
     ]
-
-    # Total cost
-    total_cost = sum(item["cost"] for item in service_costs)
 
     return {
         "total_cost": round(total_cost, 2),
-        "currency": response["ResultsByTime"][0]["Total"]["UnblendedCost"]["Unit"],
+        "currency": currency,
         "service_costs": service_costs,  # Pass all service data to LLM
         "start_date": str(start_date),
         "end_date": str(end_date),
