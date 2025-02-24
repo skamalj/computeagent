@@ -58,6 +58,51 @@ def list_ec2_instances_by_name():
 
 
 @tool
+def start_rds_instance(db_instance_identifier):
+    """
+    Starts an RDS instance with the given identifier.
+
+    :param db_instance_identifier: The identifier of the RDS instance to start.
+    :return: A confirmation message indicating the RDS instance has been started.
+    """
+    rds = boto3.client('rds')
+    rds.start_db_instance(DBInstanceIdentifier=db_instance_identifier)
+    return f"RDS instance {db_instance_identifier} has been started."
+
+@tool
+def stop_rds_instance(db_instance_identifier):
+    """
+    Stops an RDS instance using the provided identifier.
+
+    :param db_instance_identifier: The identifier of the RDS instance to stop.
+    :return: A message indicating the RDS instance has been stopped.
+    """
+    rds = boto3.client('rds')
+    rds.stop_db_instance(DBInstanceIdentifier=db_instance_identifier)
+    return f"RDS instance {db_instance_identifier} has been stopped."
+
+@tool
+def list_rds_instances():
+    """
+    Fetches and returns a list of RDS instances with their identifiers and statuses.
+
+    Returns:
+        list: A list of dictionaries containing 'DBInstanceIdentifier' and 'DBInstanceStatus'.
+    """
+    rds = boto3.client('rds')
+    response = rds.describe_db_instances()
+    instances = []
+    for db_instance in response['DBInstances']:
+        instance_id = db_instance['DBInstanceIdentifier']
+        instance_status = db_instance['DBInstanceStatus']
+        instances.append({
+            'DBInstanceIdentifier': instance_id,
+            'DBInstanceStatus': instance_status
+        })
+    return instances
+
+    
+@tool
 def send_whatsapp_message(recipient, message):
     """
     Sends a WhatsApp message using the Meta API.
@@ -70,7 +115,7 @@ def send_whatsapp_message(recipient, message):
         print("Failed to retrieve access token.")
         return None
     
-    url = " https://graph.facebook.com/v22.0/122101510484012147/messages"
+    url = "https://graph.facebook.com/v22.0/122101510484012147/messages"
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"

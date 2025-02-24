@@ -59,6 +59,13 @@ Resources:
                 - ec2:DescribeInstances
               Resource: "*"
         - Statement:
+            - Effect: Allow
+              Action:
+                - rds:DescribeDBInstances  # List RDS instances
+                - rds:StartDBInstance     # Start an RDS instance
+                - rds:StopDBInstance      # Stop an RDS instance
+              Resource: "*"  # You can restrict this to specific RDS instances if needed
+        - Statement:
             Effect: Allow
             Action:
               - dynamodb:CreateTable
