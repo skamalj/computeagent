@@ -97,8 +97,10 @@ def get_billing_data(days: int = 30):
     """
     ce = boto3.client('ce')
     # Define date range
-    end_date = datetime.utcnow().date()
-    start_date = end_date - timedelta(days=days)
+    ut_end_date = datetime.now()  # Keep as datetime object
+    end_date = ut_end_date.strftime("%Y-%m-%d")  # Convert to string after formatting
+    start_date = (ut_end_date - timedelta(days=days)).strftime("%Y-%m-%d")  # Subtract first, then format
+
 
     # Query total cost grouped by service
     response = ce.get_cost_and_usage(
