@@ -57,8 +57,6 @@ def list_ec2_instances_by_name():
     return instances
 
 
-
-
 @tool
 def send_whatsapp_message(recipient, message):
     """
