@@ -96,42 +96,57 @@ def get_billing_data(days: int = 30):
     :return: Structured billing data.
     """
     ce = boto3.client('ce')
+
     # Define date range
-    ut_end_date = datetime.now()  # Keep as datetime object
-    end_date = ut_end_date.strftime("%Y-%m-%d")  # Convert to string after formatting
-    start_date = (ut_end_date - timedelta(days=days)).strftime("%Y-%m-%d")  # Subtract first, then format
+    ut_end_date = datetime.utcnow()  # Use UTC to match AWS timestamps
+    end_date = ut_end_date.strftime("%Y-%m-%d")  # Convert to string
+    start_date = (ut_end_date - timedelta(days=days)).strftime("%Y-%m-%d")
 
+    print(f"Fetching AWS billing data from {start_date} to {end_date}...")
 
-    # Query total cost grouped by service
-    response = ce.get_cost_and_usage(
-        TimePeriod={"Start": str(start_date), "End": str(end_date)},
-        Granularity="MONTHLY",
-        Metrics=["UnblendedCost"],
-        GroupBy=[{"Type": "DIMENSION", "Key": "SERVICE"}]  # Group by service
-    )
+    try:
+        # Query AWS Cost Explorer
+        response = ce.get_cost_and_usage(
+            TimePeriod={"Start": start_date, "End": end_date},
+            Granularity="DAILY",  # Changed to daily for more accuracy
+            Metrics=["UnblendedCost"],
+            GroupBy=[{"Type": "DIMENSION", "Key": "SERVICE"}]  # Group by service
+        )
+    except Exception as e:
+        print("Error fetching AWS billing data:", str(e))
+        return None
 
-    # Extract total cost and currency
+    # Initialize total cost and currency
     total_cost = 0.0
-    currency = "USD"  # Default currency (AWS usually returns USD)
-    
-    if "Total" in response["ResultsByTime"][0]:
-        for metric_key, metric_data in response["ResultsByTime"][0]["Total"].items():
-            if "Amount" in metric_data:
-                total_cost += float(metric_data["Amount"])
-            if "Unit" in metric_data:
-                currency = metric_data["Unit"]
+    currency = "USD"  # Default currency
 
-    # Extract cost breakdown by service
-    cost_data = response["ResultsByTime"][0].get("Groups", [])
-    service_costs = [
-        {"service": item["Keys"][0], "cost": round(float(item["Metrics"]["UnblendedCost"]["Amount"]), 2)}
-        for item in cost_data if "UnblendedCost" in item["Metrics"]
+    service_costs = {}
+
+    # Process results
+    for period in response.get("ResultsByTime", []):
+        for group in period.get("Groups", []):
+            service = group["Keys"][0]  # Extract service name
+            cost = float(group["Metrics"]["UnblendedCost"]["Amount"])  # Convert cost to float
+            currency = group["Metrics"]["UnblendedCost"].get("Unit", currency)  # Get currency
+            
+            # Aggregate costs for the service
+            if service in service_costs:
+                service_costs[service] += cost
+            else:
+                service_costs[service] = cost
+
+            total_cost += cost  # Accumulate total cost
+
+    # Convert dictionary to sorted list
+    service_cost_list = [
+        {"service": service, "cost": round(cost, 2)}
+        for service, cost in sorted(service_costs.items(), key=lambda x: x[1], reverse=True)
     ]
 
     return {
         "total_cost": round(total_cost, 2),
         "currency": currency,
-        "service_costs": service_costs,  # Pass all service data to LLM
-        "start_date": str(start_date),
-        "end_date": str(end_date),
+        "service_costs": service_cost_list,
+        "start_date": start_date,
+        "end_date": end_date,
     }
