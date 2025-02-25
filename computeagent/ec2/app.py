@@ -20,7 +20,7 @@ tools += [list_rds_instances, start_rds_instance, stop_rds_instance]
 tool_node = ToolNode(tools=tools)
 model_with_tools  = model.bind_tools(tools)
 
-def delete_messages(state, n=6):
+def delete_messages(state: MessagesState, n=6):
     try:
         messages = state["messages"]
 
@@ -34,7 +34,7 @@ def delete_messages(state, n=6):
         ai_messages = [m for m in messages_to_remove if isinstance(m, AIMessage)]
         ai_message_ids = [m.id for m in ai_messages]  # AIMessage IDs for removal
         tool_call_ids = [
-                tc.id 
+                tc['id'] 
                 for msg in ai_messages 
                 if hasattr(msg, "tool_calls") and msg.tool_calls 
                 for tc in msg.tool_calls
@@ -59,7 +59,7 @@ def delete_messages(state, n=6):
 
         return {"messages": [RemoveMessage(id=m_id) for m_id in all_ids_to_remove]} # Simulating RemoveMessage
     except Exception as e:
-        print(f"Error deleting messages: {e}")
+        print(f"Error deleting messages: {e}, Total messages {len(messages)}")
         return {"messages": []}
     
 def should_continue(state: MessagesState) -> str:
