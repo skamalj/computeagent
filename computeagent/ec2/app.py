@@ -21,43 +21,46 @@ tool_node = ToolNode(tools=tools)
 model_with_tools  = model.bind_tools(tools)
 
 def delete_messages(state, n=6):
-    messages = state["messages"]
+    try:
+        messages = state["messages"]
 
-    if len(messages) <= n:
-        return {"messages": []}  # No deletion needed
+        if len(messages) <= n:
+            return {"messages": []}  # No deletion needed
 
-    messages_to_keep = messages[-n:]  # Keep last `n` messages
-    messages_to_remove = messages[:-n]  # Messages to be removed
+        messages_to_keep = messages[-n:]  # Keep last `n` messages
+        messages_to_remove = messages[:-n]  # Messages to be removed
 
-    # Step 1: Collect AIMessage IDs and tool call IDs
-    ai_messages = [m for m in messages_to_remove if isinstance(m, AIMessage)]
-    ai_message_ids = [m.id for m in ai_messages]  # AIMessage IDs for removal
-    tool_call_ids = [
-            tc.id 
-            for msg in ai_messages 
-            if hasattr(msg, "tool_calls") and msg.tool_calls 
-            for tc in msg.tool_calls
-        ]    # Tool call IDs
+        # Step 1: Collect AIMessage IDs and tool call IDs
+        ai_messages = [m for m in messages_to_remove if isinstance(m, AIMessage)]
+        ai_message_ids = [m.id for m in ai_messages]  # AIMessage IDs for removal
+        tool_call_ids = [
+                tc.id 
+                for msg in ai_messages 
+                if hasattr(msg, "tool_calls") and msg.tool_calls 
+                for tc in msg.tool_calls
+            ]    # Tool call IDs
 
-    # Step 2: Collect tool message IDs by checking tool_call_id
-    tool_messages = [m for m in messages_to_remove if isinstance(m, ToolMessage) and m.tool_call_id in tool_call_ids]
-    tool_message_ids = [m.id for m in tool_messages]  # Get IDs of tool messages to remove
+        # Step 2: Collect tool message IDs by checking tool_call_id
+        tool_messages = [m for m in messages_to_remove if isinstance(m, ToolMessage) and m.tool_call_id in tool_call_ids]
+        tool_message_ids = [m.id for m in tool_messages]  # Get IDs of tool messages to remove
 
-    # Step 3: Identify human messages for removal
-    human_messages = [m for m in messages_to_remove if isinstance(m, HumanMessage)]
-    human_message_ids = [m.id for m in human_messages]  # Get IDs of human messages to remove
+        # Step 3: Identify human messages for removal
+        human_messages = [m for m in messages_to_remove if isinstance(m, HumanMessage)]
+        human_message_ids = [m.id for m in human_messages]  # Get IDs of human messages to remove
 
-    # Step 4: Ensure all tool calls have corresponding tool messages
-    found_tool_call_ids = [m.tool_call_id for m in tool_messages]
-    missing_tool_call_ids = set(tool_call_ids) - set(found_tool_call_ids)  # Find missing tool call IDs
-    if missing_tool_call_ids:
-        print(f"Warning: Missing tool messages for tool call IDs: {missing_tool_call_ids}")
+        # Step 4: Ensure all tool calls have corresponding tool messages
+        found_tool_call_ids = [m.tool_call_id for m in tool_messages]
+        missing_tool_call_ids = set(tool_call_ids) - set(found_tool_call_ids)  # Find missing tool call IDs
+        if missing_tool_call_ids:
+            print(f"Warning: Missing tool messages for tool call IDs: {missing_tool_call_ids}")
 
-    # Step 5: Collect all message IDs to remove using `+`
-    all_ids_to_remove = ai_message_ids + tool_message_ids + human_message_ids  # List concatenation
+        # Step 5: Collect all message IDs to remove using `+`
+        all_ids_to_remove = ai_message_ids + tool_message_ids + human_message_ids  # List concatenation
 
-    return {"messages": [RemoveMessage(id=m_id) for m_id in all_ids_to_remove]} # Simulating RemoveMessage
-
+        return {"messages": [RemoveMessage(id=m_id) for m_id in all_ids_to_remove]} # Simulating RemoveMessage
+    except Exception as e:
+        print(f"Error deleting messages: {e}")
+        return {"messages": []}
     
 def should_continue(state: MessagesState) -> str:
     last_message = state['messages'][-1]
