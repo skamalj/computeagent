@@ -7,7 +7,7 @@ from utils import extract_whatsapp_messages, extract_recipient
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.prebuilt import ToolNode
-from langchain_core.messages import SystemMessage, AIMessage, ToolMessage
+from langchain_core.messages import SystemMessage, AIMessage, ToolMessage, HumanMessage
 from langgraph_dynamodb_checkpoint import DynamoDBSaver
 from langchain_core.messages import RemoveMessage
 import os
@@ -20,24 +20,43 @@ tools += [list_rds_instances, start_rds_instance, stop_rds_instance]
 tool_node = ToolNode(tools=tools)
 model_with_tools  = model.bind_tools(tools)
 
-def delete_messages(state, n=10):
+def delete_messages(state, n=6):
     messages = state["messages"]
 
     if len(messages) <= n:
         return {"messages": []}  # No deletion needed
 
-    last_to_delete_index = len(messages) - n - 1 # Identify the last message to be deleted
-    last_to_delete = messages[last_to_delete_index]
+    messages_to_keep = messages[-n:]  # Keep last `n` messages
+    messages_to_remove = messages[:-n]  # Messages to be removed
 
-    # If the last message to be deleted is an AIMessage, reduce the index by 1 to keep one extra message
-    if isinstance(last_to_delete, AIMessage):
-        last_to_delete_index -= 1  # Retain one extra message
-        return {"messages": [RemoveMessage(id=m.id) for m in messages[:last_to_delete_index+1]]}
+    # Step 1: Collect AIMessage IDs and tool call IDs
+    ai_messages = [m for m in messages_to_remove if isinstance(m, AIMessage)]
+    ai_message_ids = [m.id for m in ai_messages]  # AIMessage IDs for removal
+    tool_call_ids = [
+            tc.id 
+            for msg in ai_messages 
+            if hasattr(msg, "tool_calls") and msg.tool_calls 
+            for tc in msg.tool_calls
+        ]    # Tool call IDs
 
-    else:  # Handle consecutive ToolMessages
-        while last_to_delete_index < len(messages) and isinstance(messages[last_to_delete_index], ToolMessage):
-            last_to_delete_index += 1  # Expand deletion to include contiguous ToolMessages
-        return {"messages": [RemoveMessage(id=m.id) for m in messages[:last_to_delete_index]]}
+    # Step 2: Collect tool message IDs by checking tool_call_id
+    tool_messages = [m for m in messages_to_remove if isinstance(m, ToolMessage) and m.tool_call_id in tool_call_ids]
+    tool_message_ids = [m.id for m in tool_messages]  # Get IDs of tool messages to remove
+
+    # Step 3: Identify human messages for removal
+    human_messages = [m for m in messages_to_remove if isinstance(m, HumanMessage)]
+    human_message_ids = [m.id for m in human_messages]  # Get IDs of human messages to remove
+
+    # Step 4: Ensure all tool calls have corresponding tool messages
+    found_tool_call_ids = [m.tool_call_id for m in tool_messages]
+    missing_tool_call_ids = set(tool_call_ids) - set(found_tool_call_ids)  # Find missing tool call IDs
+    if missing_tool_call_ids:
+        print(f"Warning: Missing tool messages for tool call IDs: {missing_tool_call_ids}")
+
+    # Step 5: Collect all message IDs to remove using `+`
+    all_ids_to_remove = ai_message_ids + tool_message_ids + human_message_ids  # List concatenation
+
+    return {"messages": [RemoveMessage(id=m_id) for m_id in all_ids_to_remove]} # Simulating RemoveMessage
 
     
 def should_continue(state: MessagesState) -> str:
