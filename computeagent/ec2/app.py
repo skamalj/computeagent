@@ -39,10 +39,12 @@ def delete_messages(state: MessagesState, n=6):
                 if hasattr(msg, "tool_calls") and msg.tool_calls 
                 for tc in msg.tool_calls
             ]    # Tool call IDs
+        print(f"Deleting these AIMessages: {ai_message_ids}, Tool call IDs: {tool_call_ids}")
 
         # Step 2: Collect tool message IDs by checking tool_call_id
-        tool_messages = [m for m in messages_to_remove if isinstance(m, ToolMessage) and m.tool_call_id in tool_call_ids]
+        tool_messages = [m for m in messages if isinstance(m, ToolMessage) and m.tool_call_id in tool_call_ids]
         tool_message_ids = [m.id for m in tool_messages]  # Get IDs of tool messages to remove
+        print(f"Deleting these ToolMessages: {tool_message_ids}")
 
         # Step 3: Identify human messages for removal
         human_messages = [m for m in messages_to_remove if isinstance(m, HumanMessage)]
@@ -51,6 +53,7 @@ def delete_messages(state: MessagesState, n=6):
         # Step 4: Ensure all tool calls have corresponding tool messages
         found_tool_call_ids = [m.tool_call_id for m in tool_messages]
         missing_tool_call_ids = set(tool_call_ids) - set(found_tool_call_ids)  # Find missing tool call IDs
+        print(f"Tool call IDs: {tool_call_ids}, Found tool call IDs: {found_tool_call_ids}")
         if missing_tool_call_ids:
             print(f"Warning: Missing tool messages for tool call IDs: {missing_tool_call_ids}")
 
