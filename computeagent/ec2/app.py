@@ -29,6 +29,27 @@ def print_message_ids(messages):
         elif isinstance(msg, ToolMessage):
             print(f"ToolMessage - ID: {msg.id}, Tool Call ID: {msg.tool_call_id}")
 
+def remove_orphan_ai_messages(state: MessagesState):
+    """
+    Identifies AI messages that contain orphan tool call IDs and prepares them for removal.
+
+    Args:
+        messages (list): List of messages, including AIMessage and ToolMessage instances.
+
+    Returns:
+        dict: A dictionary containing RemoveMessage instances for orphan AI messages.
+    """
+    # Step 1: Identify orphan tool call IDs and their corresponding AIMessage IDs
+    messages = state["messages"]
+    orphan_tool_calls = find_orphan_tool_calls_with_ai_message_ids(messages)
+    orphan_ai_message_ids = set(orphan_tool_calls.values())  # AIMessage IDs to remove
+
+    # Step 2: Prepare RemoveMessage instances for orphan AI messages
+    remove_messages = [RemoveMessage(id=ai_id) for ai_id in orphan_ai_message_ids]
+
+    print(f"Packing orphan AI messages for removal: {orphan_ai_message_ids}")
+    return {"messages": remove_messages}
+
 def find_orphan_tool_calls_with_ai_message_ids(messages):
     """
     Identifies orphan tool call IDs that exist in AIMessage but do not have a corresponding ToolMessage.
@@ -141,11 +162,13 @@ def call_model(state: MessagesState):
 def init_graph():
     with DynamoDBSaver.from_conn_info(table_name="whatsapp_checkpoint") as saver:
         graph = StateGraph(MessagesState)
+        graph.add_node("delete_orphan_messages",remove_orphan_ai_messages)
         graph.add_node("agent", call_model)
         graph.add_node("tools", tool_node)
         graph.add_node(delete_messages)
 
-        graph.add_edge(START, "agent")
+        graph.add_edge(START, "delete_orphan_messages")
+        graph.add_edge("delete_orphan_messages", "agent")
         graph.add_conditional_edges("agent", should_continue, ["tools", "delete_messages"])
         graph.add_edge("tools", "agent")
         graph.add_edge("delete_messages", END)
