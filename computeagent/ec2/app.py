@@ -1,6 +1,6 @@
 import json
 from tools import start_ec2_instance, stop_ec2_instance, list_ec2_instances_by_name, send_whatsapp_message, get_billing_data
-from tools import list_rds_instances, start_rds_instance, stop_rds_instance
+from tools import list_rds_instances, start_rds_instance, stop_rds_instance, create_azure_devops_user_story
 from utils import extract_whatsapp_messages, extract_recipient
 # import requests
 
@@ -15,7 +15,7 @@ import os
 
 model = ChatOpenAI(model=os.getenv("MODEL_NAME"), temperature=0)
 tools = [start_ec2_instance, stop_ec2_instance, list_ec2_instances_by_name, send_whatsapp_message, get_billing_data]
-tools += [list_rds_instances, start_rds_instance, stop_rds_instance]
+tools += [list_rds_instances, start_rds_instance, stop_rds_instance, create_azure_devops_user_story]
 
 tool_node = ToolNode(tools=tools)
 model_with_tools  = model.bind_tools(tools)
@@ -82,7 +82,7 @@ def find_orphan_tool_calls_with_ai_message_ids(messages):
 
     return orphan_tool_calls
 
-def delete_messages(state: MessagesState, n=os.getenv("MSG_HISTORY_TO_KEEP")):
+def delete_messages(state: MessagesState, n=int(os.getenv("MSG_HISTORY_TO_KEEP"))):
     try:
         messages = state["messages"]
 
