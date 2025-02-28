@@ -1,9 +1,12 @@
 # @! create tools, for LLM, to start and stop ec2 instancews. Use langraph annotations to mark these as tools
 from langchain_core.tools import tool
-from utils import get_secret, extract_recipient
-import boto3
+from utils import get_secret
 import requests
 from datetime import datetime, timedelta
+import requests
+import boto3
+import json
+import os
 
 @tool
 def start_ec2_instance(instance_id):
@@ -193,3 +196,56 @@ def get_billing_data(days: int = 30):
         "start_date": start_date,
         "end_date": end_date,
     }
+
+# @! create tool to create user story in Azure Devops, also suggest input 
+@tool
+def create_azure_devops_user_story(title, description):
+    """
+    Creates a new Azure DevOps user story and sends the story ID to an AWS SQS queue.
+
+    :param title: The title of the user story.
+    :param description: A detailed description of the user story.
+    :return: The JSON response from the Azure DevOps API.
+    """
+    az_token = os.getenv("AZ_DEVOPS_PAT")
+    sqs_queue_url = os.getenv("LOKI_TO_JARVIS_QUEUE_URL")  # Ensure this is set in the environment variables
+
+    if not az_token or not sqs_queue_url:
+        print("Failed to retrieve required environment variables.")
+        return None
+
+    # Azure DevOps API Call
+    url = "https://dev.azure.com/skamalj-org/agent-loki/_apis/wit/workitems/$User%20Story?api-version=7.1"
+    headers = {
+        "Content-Type": "application/json-patch+json",
+        "Authorization": f"Basic {az_token}"
+    }
+
+    payload = [
+        {"op": "add", "path": "/fields/System.Title", "value": title},
+        {"op": "add", "path": "/fields/System.Description", "value": description},
+        {"op": "add", "path": "/fields/System.State", "value": "New"}
+    ]
+
+    response = requests.post(url, headers=headers, json=payload)
+
+    if response.status_code == 200 or response.status_code == 201:
+        story_data = response.json()
+        story_id = story_data.get("id")
+        
+        if story_id:
+            # Send story ID to SQS
+            sqs_client = boto3.client("sqs")
+            message_body = json.dumps({"story_id": story_id, "title": title, "description": description})
+            
+            sqs_response = sqs_client.send_message(
+                QueueUrl=sqs_queue_url,
+                MessageBody=message_body
+            )
+            
+            print(f"Story ID {story_id} sent to SQS. Message ID: {sqs_response['MessageId']}")
+        
+        return story_data
+    else:
+        print("Failed to create user story:", response.text)
+        return None

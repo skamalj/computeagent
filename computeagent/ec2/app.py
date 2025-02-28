@@ -30,15 +30,7 @@ def print_message_ids(messages):
             print(f"ToolMessage - ID: {msg.id}, Tool Call ID: {msg.tool_call_id}")
 
 def remove_orphan_ai_messages(state: MessagesState):
-    """
-    Identifies AI messages that contain orphan tool call IDs and prepares them for removal.
-
-    Args:
-        messages (list): List of messages, including AIMessage and ToolMessage instances.
-
-    Returns:
-        dict: A dictionary containing RemoveMessage instances for orphan AI messages.
-    """
+    
     # Step 1: Identify orphan tool call IDs and their corresponding AIMessage IDs
     print("Identifying and removing orphan AI messages...")
     messages = state["messages"]
@@ -90,7 +82,7 @@ def find_orphan_tool_calls_with_ai_message_ids(messages):
 
     return orphan_tool_calls
 
-def delete_messages(state: MessagesState, n=6):
+def delete_messages(state: MessagesState, n=os.getenv("MSG_HISTORY_TO_KEEP")):
     try:
         messages = state["messages"]
 
