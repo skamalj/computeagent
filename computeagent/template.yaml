@@ -7,7 +7,7 @@ Description: >
 
 Globals:
   Function:
-    Timeout: 10  # Increased timeout since SQS processing may take longer
+    Timeout: 20  # Increased timeout since SQS processing may take longer
 
 Parameters:
   OpenAISecretName:
