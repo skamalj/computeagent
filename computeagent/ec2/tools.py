@@ -200,12 +200,6 @@ def get_billing_data(days: int = 30):
 
 # @! create tool to create user story in Azure Devops, also suggest input 
 @tool
-import os
-import json
-import base64
-import requests
-import boto3
-
 def create_azure_devops_user_story(title, description, acceptance_criteria):
     """
     Creates a new Azure DevOps user story and sends the story ID to an AWS SQS queue.
