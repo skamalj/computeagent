@@ -92,8 +92,8 @@ def delete_messages(state: MessagesState, n=int(os.getenv("MSG_HISTORY_TO_KEEP")
         if len(messages) <= n:
             return {"messages": []}  # No deletion needed
 
-        messages_to_keep = messages[-n:]  # Keep last `n` messages
-        messages_to_remove = messages[:-n]  # Messages to be removed
+        messages_to_remove = messages[-n:]  # Messages to remove
+        messages_to_keep = messages[:-n]  # Messages to keep
 
         # Step 1: Collect AIMessage IDs and tool call IDs
         ai_messages = [m for m in messages_to_remove if isinstance(m, AIMessage)]
