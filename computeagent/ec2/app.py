@@ -142,14 +142,16 @@ def call_model(state: MessagesState):
     with open("agent_prompt.txt", "r", encoding="utf-8") as file:
         system_message = file.read()
         messages = state["messages"]
-        
+        system_msg = SystemMessage(content=system_message)
+
         # Find orphan tool calls with AI message IDs
         find_orphan_tool_calls_with_ai_message_ids(messages)
 
-        if not any(isinstance(msg, SystemMessage) for msg in messages):
-            # Create and prepend the system message
-            system_msg = SystemMessage(content=system_message)
+        if isinstance(messages[0], SystemMessage):
+            messages[0]=system_msg
+        else:
             messages.insert(0, system_msg)
+            
         response = model_with_tools.invoke(messages)
         return {"messages": [response]}
 
