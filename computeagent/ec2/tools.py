@@ -200,12 +200,19 @@ def get_billing_data(days: int = 30):
 
 # @! create tool to create user story in Azure Devops, also suggest input 
 @tool
-def create_azure_devops_user_story(title, description):
+import os
+import json
+import base64
+import requests
+import boto3
+
+def create_azure_devops_user_story(title, description, acceptance_criteria):
     """
     Creates a new Azure DevOps user story and sends the story ID to an AWS SQS queue.
 
     :param title: The title of the user story.
     :param description: A detailed description of the user story.
+    :param acceptance_criteria: A list of acceptance criteria for the user story.
     :return: The JSON response from the Azure DevOps API.
     """
     az_token = os.getenv("AZ_DEVOPS_PAT")
@@ -214,7 +221,11 @@ def create_azure_devops_user_story(title, description):
     if not az_token or not sqs_queue_url:
         print("Failed to retrieve required environment variables.")
         return None
+    
     auth_header = base64.b64encode(f"'':{az_token}".encode()).decode()
+
+    # Format acceptance criteria as a bullet-point list
+    formatted_acceptance_criteria = "\n".join([f"- {criterion}" for criterion in acceptance_criteria])
 
     # Azure DevOps API Call
     url = "https://dev.azure.com/skamalj-org/agent-loki/_apis/wit/workitems/$User%20Story?api-version=7.1"
@@ -226,12 +237,13 @@ def create_azure_devops_user_story(title, description):
     payload = [
         {"op": "add", "path": "/fields/System.Title", "value": title},
         {"op": "add", "path": "/fields/System.Description", "value": description},
-        {"op": "add", "path": "/fields/System.State", "value": "New"}
+        {"op": "add", "path": "/fields/System.State", "value": "New"},
+        {"op": "add", "path": "/fields/Microsoft.VSTS.Common.AcceptanceCriteria", "value": formatted_acceptance_criteria}
     ]
 
     response = requests.post(url, headers=headers, json=payload)
 
-    if response.status_code == 200 or response.status_code == 201:
+    if response.status_code in [200, 201]:
         story_data = response.json()
         story_id = story_data.get("id")
         
