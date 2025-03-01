@@ -7,6 +7,7 @@ import requests
 import boto3
 import json
 import os
+import base64
 
 @tool
 def start_ec2_instance(instance_id):
@@ -213,12 +214,13 @@ def create_azure_devops_user_story(title, description):
     if not az_token or not sqs_queue_url:
         print("Failed to retrieve required environment variables.")
         return None
+    auth_header = base64.b64encode(f"'':{az_token}".encode()).decode()
 
     # Azure DevOps API Call
     url = "https://dev.azure.com/skamalj-org/agent-loki/_apis/wit/workitems/$User%20Story?api-version=7.1"
     headers = {
         "Content-Type": "application/json-patch+json",
-        "Authorization": f"Basic {az_token}"
+        "Authorization": f"Basic {auth_header}"
     }
 
     payload = [
@@ -236,7 +238,7 @@ def create_azure_devops_user_story(title, description):
         if story_id:
             # Send story ID to SQS
             sqs_client = boto3.client("sqs")
-            message_body = json.dumps({"story_id": story_id, "title": title, "description": description})
+            message_body = json.dumps({"story_id": story_id})
             
             sqs_response = sqs_client.send_message(
                 QueueUrl=sqs_queue_url,
