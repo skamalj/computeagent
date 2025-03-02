@@ -201,7 +201,7 @@ def get_billing_data(days: int = 30):
 # @! create tool to create user story in Azure Devops, also suggest input 
 @tool
 def create_azure_devops_user_story(title, description, acceptance_criteria):
-    """
+tool_list.append(list_lambda_functions)
     Creates a new Azure DevOps user story and sends the story ID to an AWS SQS queue.
 
     :param title: The title of the user story.
@@ -283,3 +283,28 @@ def list_lambda_functions():
 
 tool_list.append(list_lambda_functions)
 
+
+@tool
+def list_lambda_functions():
+    """
+    Lists AWS Lambda functions with their names and statuses.
+
+    :return: A list of dictionaries containing 'FunctionName' and 'State'.
+    """
+    lambda_client = boto3.client('lambda')
+    try:
+        response = lambda_client.list_functions()
+        functions = []
+        for function in response['Functions']:
+            function_name = function['FunctionName']
+            function_state = function['State'] if 'State' in function else 'Unknown'
+            functions.append({
+                'FunctionName': function_name,
+                'State': function_state
+            })
+        return functions
+    except lambda_client.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == 'AccessDeniedException':
+            return "Access denied. Please check your permissions to list Lambda functions."
+        else:
+            return f"An error occurred: {str(e)}"
