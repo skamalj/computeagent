@@ -1,4 +1,4 @@
-# @! create tools, for LLM, to start and stop ec2 instancews. Use langraph annotations to mark these as tools
+tool_list = [list_eks_clusters]
 from langchain_core.tools import tool
 from utils import get_secret
 import requests
@@ -260,3 +260,22 @@ def create_azure_devops_user_story(title, description, acceptance_criteria):
         return None
 
 tool_list = [start_ec2_instance, stop_ec2_instance, list_ec2_instances_by_name, send_whatsapp_message, get_billing_data]
+def list_eks_clusters():
+    """
+    Lists all AWS EKS clusters with their names and statuses.
+
+    Returns:
+        list: A list of dictionaries containing EKS cluster names and statuses.
+    """
+    import boto3
+    eks_client = boto3.client('eks')
+    response = eks_client.list_clusters()
+    clusters = []
+    for cluster_name in response['clusters']:
+        cluster_info = eks_client.describe_cluster(name=cluster_name)
+        clusters.append({
+            'name': cluster_info['cluster']['name'],
+            'status': cluster_info['cluster']['status']
+        })
+    return clusters
+
