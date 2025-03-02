@@ -79,11 +79,6 @@ Resources:
             - Effect: Allow
               Action:
                 - lambda:ListFunctions
-        - Statement:
-            - Effect: Allow
-              Action:
-                - lambda:ListFunctions
-              Resource: "*"
               Resource: "*"
         - Statement:
             - Effect: Allow
