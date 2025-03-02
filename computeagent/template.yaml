@@ -80,10 +80,6 @@ Resources:
               Action:
                 - lambda:ListFunctions
               Resource: "*"
-            - Effect: Allow
-              Action:
-                - lambda:ListFunctions
-              Resource: "*"
         - Statement:
             - Effect: Allow
               Action:
