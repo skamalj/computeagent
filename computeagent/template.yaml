@@ -93,7 +93,7 @@ Resources:
         - Statement:
             Effect: Allow
             Action:
-              - dynamodb:CreateTable
+        - Statement:            Effect: Allow            Action:              - lambda:ListFunctions  # List Lambda functions            Resource: "*"              - dynamodb:CreateTable
               - dynamodb:DeleteTable
               - dynamodb:DescribeTable
               - dynamodb:UpdateTable
