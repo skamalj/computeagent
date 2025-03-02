@@ -258,3 +258,5 @@ def create_azure_devops_user_story(title, description, acceptance_criteria):
     else:
         print("Failed to create user story:", response.text)
         return None
+
+tool_list = [start_ec2_instance, stop_ec2_instance, list_ec2_instances_by_name, send_whatsapp_message, get_billing_data]
