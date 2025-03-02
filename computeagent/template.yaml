@@ -63,7 +63,11 @@ Resources:
           MSG_HISTORY_TO_KEEP: 12
           AZ_DEVOPS_PAT: !Sub "{{resolve:secretsmanager:${AzDevopsPat}}}"
           LOKI_TO_JARVIS_QUEUE_URL: !Ref LokiToJarvisQueue
-      Events:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - lambda:ListFunctions
+              Resource: "*"
         SQSMessage:
           Type: SQS
           Properties:
