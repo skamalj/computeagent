@@ -240,6 +240,7 @@ def create_azure_devops_user_story(title, description, acceptance_criteria):
     if response.status_code in [200, 201]:
         story_data = response.json()
         story_id = story_data.get("id")
+        print(f"Sending story ID: {story_id} for development")
         
         if story_id:
             # Send story ID to SQS
