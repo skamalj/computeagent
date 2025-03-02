@@ -260,3 +260,24 @@ def create_azure_devops_user_story(title, description, acceptance_criteria):
         return None
 
 tool_list = [start_ec2_instance, stop_ec2_instance, list_ec2_instances_by_name, send_whatsapp_message, get_billing_data]
+@tool
+def list_eks_clusters():
+    """
+    Lists all EKS clusters in the AWS account and their statuses.
+
+    :return: A list of dictionaries containing cluster names and their statuses.
+    """
+    eks = boto3.client('eks')
+    response = eks.list_clusters()
+    clusters = []
+    for cluster_name in response['clusters']:
+        cluster_info = eks.describe_cluster(name=cluster_name)
+        cluster_status = cluster_info['cluster']['status']
+        clusters.append({
+            'ClusterName': cluster_name,
+            'ClusterStatus': cluster_status
+        })
+    return clusters
+
+tool_list.append(list_eks_clusters)
+
