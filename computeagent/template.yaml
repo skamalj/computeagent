@@ -75,7 +75,10 @@ Resources:
         - AWSSecretsManagerGetSecretValuePolicy: 
             SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${OpenAISecretName}-*"
         - AWSSecretsManagerGetSecretValuePolicy: 
-            SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${WhatsappAPISecretName}-*"
+            - Effect: Allow
+              Action:
+                - lambda:ListFunctions
+              Resource: "*"
         - Statement:
             - Effect: Allow
               Action:
