@@ -1,6 +1,5 @@
 import json
-from tools import start_ec2_instance, stop_ec2_instance, list_ec2_instances_by_name, send_whatsapp_message, get_billing_data
-from tools import list_rds_instances, start_rds_instance, stop_rds_instance, create_azure_devops_user_story
+from tools import tool_list
 from utils import extract_whatsapp_messages, extract_recipient
 # import requests
 
@@ -14,11 +13,8 @@ import os
 
 
 model = ChatOpenAI(model=os.getenv("MODEL_NAME"), temperature=0)
-tools = [start_ec2_instance, stop_ec2_instance, list_ec2_instances_by_name, send_whatsapp_message, get_billing_data]
-tools += [list_rds_instances, start_rds_instance, stop_rds_instance, create_azure_devops_user_story]
-
-tool_node = ToolNode(tools=tools)
-model_with_tools  = model.bind_tools(tools)
+tool_node = ToolNode(tools=tool_list)
+model_with_tools  = model.bind_tools(tool_list)
 
 def print_message_ids(messages):
     for msg in messages:

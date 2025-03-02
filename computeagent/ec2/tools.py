@@ -260,3 +260,4 @@ def create_azure_devops_user_story(title, description, acceptance_criteria):
         return None
 
 tool_list = [start_ec2_instance, stop_ec2_instance, list_ec2_instances_by_name, send_whatsapp_message, get_billing_data]
+tool_list += [list_rds_instances, start_rds_instance, stop_rds_instance, create_azure_devops_user_story]
