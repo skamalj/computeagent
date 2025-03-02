@@ -184,7 +184,7 @@ def get_billing_data(days: int = 30):
 
             total_cost += cost  # Accumulate total cost
 
-    # Convert dictionary to sorted list
+tool_list.append(add_developer_to_project)tool_list.append(list_developers_in_project)tool_list.append(remove_developer_from_project)    # Convert dictionary to sorted list
     service_cost_list = [
         {"service": service, "cost": round(cost, 2)}
         for service, cost in sorted(service_costs.items(), key=lambda x: x[1], reverse=True)
@@ -283,3 +283,45 @@ def list_lambda_functions():
 
 tool_list.append(list_lambda_functions)
 
+
+@tool
+def add_developer_to_project(developer_name, developer_email):
+    """
+    Adds a new developer to the Loki project.
+
+    :param developer_name: The name of the developer to add.
+    :param developer_email: The email of the developer to add.
+    :return: Confirmation message.
+    """
+    # Placeholder for actual implementation
+    # This would typically involve an API call to a project management system
+    return f"Developer {developer_name} with email {developer_email} has been added to the project."
+
+
+@tool
+def list_developers_in_project():
+    """
+    Lists all developers currently in the Loki project.
+
+    :return: A list of developers.
+    """
+    # Placeholder for actual implementation
+    # This would typically involve an API call to a project management system
+    developers = [
+        {'name': 'Alice Smith', 'email': 'alice.smith@example.com'},
+        {'name': 'Bob Johnson', 'email': 'bob.johnson@example.com'}
+    ]
+    return developers
+
+
+@tool
+def remove_developer_from_project(developer_email):
+    """
+    Removes a developer from the Loki project.
+
+    :param developer_email: The email of the developer to remove.
+    :return: Confirmation message.
+    """
+    # Placeholder for actual implementation
+    # This would typically involve an API call to a project management system
+    return f"Developer with email {developer_email} has been removed from the project."
