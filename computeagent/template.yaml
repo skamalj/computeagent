@@ -92,7 +92,11 @@ Resources:
               Resource: "*"  # You can restrict this to specific RDS instances if needed
         - Statement:
             Effect: Allow
-            Action:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - lambda:ListFunctions
+              Resource: "*"
               - dynamodb:CreateTable
               - dynamodb:DeleteTable
               - dynamodb:DescribeTable
