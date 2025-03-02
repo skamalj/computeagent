@@ -61,7 +61,11 @@ Resources:
           OPENAI_API_KEY: !Sub "{{resolve:secretsmanager:${OpenAISecretName}}}"
           MODEL_NAME: "gpt-4o"
           MSG_HISTORY_TO_KEEP: 12
-          AZ_DEVOPS_PAT: !Sub "{{resolve:secretsmanager:${AzDevopsPat}}}"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - lambda:ListFunctions
+              Resource: "*"
           LOKI_TO_JARVIS_QUEUE_URL: !Ref LokiToJarvisQueue
         - Statement:
             - Effect: Allow

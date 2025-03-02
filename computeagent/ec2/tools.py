@@ -327,3 +327,25 @@ def list_lambda_functions():
 
 tool_list.append(list_lambda_functions)
 
+
+@tool
+def list_lambda_functions():
+    """
+    Lists all AWS Lambda functions with their names and statuses.
+
+    :return: A list of dictionaries containing 'FunctionName' and 'State'.
+    """
+    lambda_client = boto3.client('lambda')
+    response = lambda_client.list_functions()
+    functions = []
+    for function in response['Functions']:
+        function_name = function['FunctionName']
+        function_state = function['State'] if 'State' in function else 'Unknown'
+        functions.append({
+            'FunctionName': function_name,
+            'State': function_state
+        })
+    return functions
+
+tool_list.append(list_lambda_functions)
+
