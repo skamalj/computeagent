@@ -4,4 +4,4 @@ boto3>=1.36.26
 langchain-openai>=0.3.6
 langgraph>=0.2.74
 langchain>=0.3.19
-langgraph_dynamodb_checkpoint>=0.1.8
+langgraph_dynamodb_checkpoint>=0.2.0
