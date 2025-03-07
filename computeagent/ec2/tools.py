@@ -283,3 +283,68 @@ def list_lambda_functions():
 
 tool_list.append(list_lambda_functions)
 
+
+@tool
+def generate_monthly_billing_report():
+    """
+    Generates a monthly billing report for AWS services.
+
+    :return: A dictionary containing the report summary and a downloadable PDF link.
+    """
+    import boto3
+    from fpdf import FPDF
+    import os
+
+    # Initialize AWS Cost Explorer client
+    ce = boto3.client('ce')
+
+    # Define date range for the current month
+    start_date = datetime(datetime.now().year, datetime.now().month, 1).strftime('%Y-%m-%d')
+    end_date = (datetime(datetime.now().year, datetime.now().month + 1, 1) - timedelta(days=1)).strftime('%Y-%m-%d')
+
+    # Fetch cost and usage data
+    response = ce.get_cost_and_usage(
+        TimePeriod={'Start': start_date, 'End': end_date},
+        Granularity='MONTHLY',
+        Metrics=['UnblendedCost'],
+        GroupBy=[{'Type': 'DIMENSION', 'Key': 'SERVICE'}]
+    )
+
+    # Process the response to extract cost data
+    total_cost = 0.0
+    service_costs = []
+    for result in response['ResultsByTime']:
+        for group in result['Groups']:
+            service = group['Keys'][0]
+            cost = float(group['Metrics']['UnblendedCost']['Amount'])
+            service_costs.append({'service': service, 'cost': cost})
+            total_cost += cost
+
+    # Generate PDF report
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font('Arial', 'B', 12)
+    pdf.cell(0, 10, 'Monthly Billing Report', 0, 1, 'C')
+    pdf.set_font('Arial', '', 10)
+    pdf.cell(0, 10, f'Date Range: {start_date} to {end_date}', 0, 1, 'C')
+    pdf.cell(0, 10, f'Total Cost: ${total_cost:.2f}', 0, 1, 'C')
+    pdf.ln(10)
+    pdf.set_font('Arial', 'B', 10)
+    pdf.cell(0, 10, 'Service Costs:', 0, 1)
+    pdf.set_font('Arial', '', 10)
+    for service_cost in service_costs:
+        pdf.cell(0, 10, f"{service_cost['service']}: ${service_cost['cost']:.2f}", 0, 1)
+
+    # Save PDF to a temporary file
+    pdf_file_path = '/tmp/monthly_billing_report.pdf'
+    pdf.output(pdf_file_path)
+
+    # Return the report summary and PDF path
+    return {
+        'total_cost': total_cost,
+        'service_costs': service_costs,
+        'pdf_report_path': pdf_file_path
+    }
+
+tool_list.append(generate_monthly_billing_report)
+
