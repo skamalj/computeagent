@@ -202,8 +202,7 @@ def get_billing_data(days: int = 30):
 @tool
 def create_azure_devops_user_story(title, description, acceptance_criteria):
     """
-    Creates a new Azure DevOps user story and sends the story ID to an AWS SQS queue.
-
+tool_list = [start_ec2_instance, stop_ec2_instance, list_ec2_instances_by_name, send_whatsapp_message, get_billing_data]tool_list += [list_rds_instances, start_rds_instance, stop_rds_instance, create_azure_devops_user_story, list_lambda_functions]
     :param title: The title of the user story.
     :param description: A detailed description of the user story.
     :param acceptance_criteria: A list of acceptance criteria for the user story.
