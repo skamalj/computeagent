@@ -283,3 +283,20 @@ def list_lambda_functions():
 
 tool_list.append(list_lambda_functions)
 
+
+@tool
+def count_letters_in_text(text):
+    """
+    Counts the occurrences of each letter in the given text.
+
+    :param text: The input text to analyze.
+    :return: A dictionary with letters as keys and their counts as values.
+    """
+    from collections import Counter
+    # Remove spaces and convert to lowercase for uniformity
+    cleaned_text = text.replace(" ", "").lower()
+    letter_count = Counter(cleaned_text)
+    return dict(letter_count)
+
+tool_list.append(count_letters_in_text)
+
