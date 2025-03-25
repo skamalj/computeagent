@@ -137,7 +137,7 @@ def should_continue(state: MessagesState) -> str:
     return 'tools'
 
 # Function to call the supervisor model
-def call_model(state: MessagesState): 
+def call_gw_model(state: MessagesState): 
     with open("agent_prompt.txt", "r", encoding="utf-8") as file:
         system_message = file.read()
         messages = state["messages"]
@@ -160,7 +160,7 @@ def init_graph():
     with DynamoDBSaver.from_conn_info(table_name="whatsapp_checkpoint") as saver:
         graph = StateGraph(MessagesState)
         graph.add_node("delete_orphan_messages",remove_orphan_ai_messages)
-        graph.add_node("agent", call_model)
+        graph.add_node("agent", call_gw_model)
         graph.add_node("tools", tool_node)
         graph.add_node(delete_messages)
 
