@@ -68,7 +68,8 @@ Resources:
           OPENAI_API_KEY: !Sub "{{resolve:secretsmanager:${OpenAISecretName}}}"
           MODEL_NAME: "gpt-4o"
           PROVIDER_NAME: "openai"
-          MSG_HISTORY_TO_KEEP: 12
+          MSG_HISTORY_TO_KEEP: 20
+          DELETE_TRIGGER_COUNT: 10
           AZ_DEVOPS_PAT: !Sub "{{resolve:secretsmanager:${AzDevopsPat}}}"
           LOKI_TO_JARVIS_QUEUE_URL: !Ref LokiToJarvisQueue
           API_GW_URL: !Sub "{{resolve:secretsmanager:${ApiGWEndpoint}}}"
