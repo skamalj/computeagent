@@ -283,3 +283,27 @@ def list_lambda_functions():
 
 tool_list.append(list_lambda_functions)
 
+
+@tool
+def tell_joke_via_whatsapp(recipient):
+    """
+    Sends a random joke to the specified recipient via WhatsApp.
+
+    :param recipient: The recipient's phone number.
+    :return: The JSON response from the WhatsApp API call.
+    """
+    jokes = [
+        "Why don't scientists trust atoms? Because they make up everything!",
+        "What do you get when you cross a snowman and a vampire? Frostbite!",
+        "Why did the scarecrow win an award? Because he was outstanding in his field!",
+        "Why don't skeletons fight each other? They don't have the guts.",
+        "What do you call fake spaghetti? An impasta!"
+    ]
+    
+    import random
+    joke = random.choice(jokes)
+    
+    return send_whatsapp_message(recipient, joke)
+
+tool_list.append(tell_joke_via_whatsapp)
+
