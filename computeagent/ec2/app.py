@@ -9,10 +9,13 @@ from langgraph.prebuilt import ToolNode
 from langchain_core.messages import SystemMessage, AIMessage, ToolMessage, HumanMessage
 from langgraph_dynamodb_checkpoint import DynamoDBSaver
 from langchain_core.messages import RemoveMessage
+from langgraph_utils import call_model, create_tools_json
 import os
 
+model_name = model=os.getenv("MODEL_NAME")
+provider_name = os.getenv("PROVIDER_NAME")
 
-model = ChatOpenAI(model=os.getenv("MODEL_NAME"), temperature=0)
+model = ChatOpenAI(model=model_name, temperature=0)
 tool_node = ToolNode(tools=tool_list)
 model_with_tools  = model.bind_tools(tool_list)
 
@@ -147,8 +150,10 @@ def call_model(state: MessagesState):
             messages[0]=system_msg
         else:
             messages.insert(0, system_msg)
-            
-        response = model_with_tools.invoke(messages)
+
+        json_tools = create_tools_json(tool_list)
+        response = call_model(model_name, provider_name, messages, json_tools)
+        #response = model_with_tools.invoke(messages)
         return {"messages": [response]}
 
 def init_graph():

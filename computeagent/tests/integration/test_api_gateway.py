@@ -4,17 +4,6 @@ import requests
 import os
 from langchain_core.messages import utils
 
-def create_tools_json(tools):
-    tools_json = []
-    for tool in tools:
-        tool_info = {
-            'name': tool.name,
-            'description': tool.description,
-            'args_schema': tool.args_schema.model_json_schema()
-        }
-        tools_json.append(tool_info)
-    return tools_json
-
 data = {
     "provider": "openai",    
     "model_name": "gpt-4o",  
@@ -37,7 +26,7 @@ def call_api_gateway(api_url, api_key, data):
 
 
 
-from langchain_core.messages import AIMessage
+from langchain_core.messages import  HumanMessage, AIMessage
 from langchain_core.tools import tool
 
 from langgraph.prebuilt import ToolNode
@@ -50,25 +39,31 @@ def get_weather(location: str):
     else:
         return "It's 90 degrees and sunny."
 
+# @! create tool to add two numbers 
 
 @tool
+def add_numbers(num1: int, num2: int):
+    """Add two numbers."""
+    return num1 + num2
+@tool
+
 def get_coolest_cities():
     """Get a list of coolest cities"""
     return "nyc, sf"
 
-from langgraph_utils import json_to_structured_tools
+from langgraph_utils import json_to_structured_tools, create_tools_json
 import json
-tools = [get_weather, get_coolest_cities]
+tools = [get_weather, get_coolest_cities, add_numbers]
 tool_node = ToolNode(tools)
 tools_json = create_tools_json(tools)
 
 data["tools"] = tools_json
-data["messages"] = utils.convert_to_openai_messages([AIMessage(content="What's the weather in SF?", role="human")])
-print(tools_json)
+data["messages"] = utils.convert_to_openai_messages([HumanMessage(content="What's 27 plus 343 ?", role="human")])
+print(data)
 print(json_to_structured_tools(tools_json))
 
 response = call_api_gateway(api_url, api_key, data)
 print(response)
 ai_message = AIMessage(**response)
 
-tool_node.invoke({"messages": [ai_message]})
+print(tool_node.invoke({"messages": [ai_message]}))
