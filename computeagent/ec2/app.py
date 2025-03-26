@@ -201,7 +201,8 @@ def lambda_handler(event, context):
         recipeint = extract_recipient(body)
         config = {"configurable": {"thread_id": recipeint}}
         messages = app.get_state(config).values["messages"]
-        app.update_state(config, {"messages": RemoveMessage(id=messages[1].id)})
+        app.update_state(config, {"messages": RemoveMessage(id="run-d526781e-d47a-41d6-9cf6-9a4387b94688-0")})
+        app.update_state(config, {"messages": [RemoveMessage(id=m.id) for m in messages[1:6]]})
         print(f"Message recieved from {recipeint}:  {message}")
         input_message = {
             "messages": [
