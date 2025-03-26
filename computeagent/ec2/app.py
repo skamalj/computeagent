@@ -23,7 +23,7 @@ def print_message_ids(messages):
     for msg in messages:
         if isinstance(msg, AIMessage):
             tool_call_ids = [tc["id"] for tc in msg.tool_calls] if hasattr(msg, "tool_calls") and msg.tool_calls else []
-            print(f"AIMessage - ID: {msg.id}, Tool Call IDs: {tool_call_ids}")
+            print(f"AIMessage - ID: {msg.id}, Tool Call IDs: {tool_call_ids}, Content: {msg.content}")
         
         elif isinstance(msg, ToolMessage):
             print(f"ToolMessage - ID: {msg.id}, Tool Call ID: {msg.tool_call_id}")
@@ -94,7 +94,7 @@ def delete_messages(state: MessagesState, n=int(os.getenv("MSG_HISTORY_TO_KEEP")
             return {"messages": []}  # No deletion needed
         else:
             print(f"Total messages: {len(messages)}, deleting all except last {n} messages.")
-            return {"messages": [RemoveMessage(id=m.id) for m in messages[:-n]]} 
+            return {"messages": [RemoveMessage(id=m.id) for m in messages[1:delete_trigger_count-n]]} 
 
         messages_to_keep = messages[-n:]  # Keep last `n` messages
         messages_to_remove = messages[:-n]  # Messages to be removed
