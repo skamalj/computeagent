@@ -11,6 +11,7 @@ from langgraph_dynamodb_checkpoint import DynamoDBSaver
 from langchain_core.messages import RemoveMessage
 from langgraph_utils import call_model, create_tools_json
 import os
+from prunablemessagestate import PrunableMessageState
 
 model_name = model=os.getenv("MODEL_NAME")
 provider_name = os.getenv("PROVIDER_NAME")
@@ -166,7 +167,7 @@ def call_gw_model(state: MessagesState):
         return {"messages": [response]}
 
 def init_graph():
-    with DynamoDBSaver.from_conn_info(table_name="whatsapp_checkpoint") as saver:
+    with DynamoDBSaver.from_conn_info(table_name="whatsapp_checkpoint", max_write_request_units=100,max_read_request_units=100) as saver:
         graph = StateGraph(MessagesState)
         graph.add_node("delete_orphan_messages",remove_orphan_ai_messages)
         graph.add_node("agent", call_gw_model)
