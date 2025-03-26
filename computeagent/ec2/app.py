@@ -33,6 +33,7 @@ def remove_orphan_ai_messages(state: MessagesState):
     # Step 1: Identify orphan tool call IDs and their corresponding AIMessage IDs
     print("Identifying and removing orphan AI messages...")
     messages = state["messages"]
+    print_message_ids(messages)
     orphan_tool_calls = find_orphan_tool_calls_with_ai_message_ids(messages)
     orphan_ai_message_ids = set(orphan_tool_calls.values())  # AIMessage IDs to remove
 
@@ -89,12 +90,14 @@ def delete_messages(state: MessagesState, n=int(os.getenv("MSG_HISTORY_TO_KEEP")
         print_message_ids(messages)
         delete_trigger_count = int(os.environ.get("DELETE_TRIGGER_COUNT", 10))
 
+
         if len(messages) <= delete_trigger_count:
             print(f"Total messages: {len(messages)}, nothing to delete")
             return {"messages": []}  # No deletion needed
         else:
             print(f"Total messages: {len(messages)}, deleting all except last {n} messages.")
             print(f"Triggering deletion for {delete_trigger_count} messages. {[{m.id: m.content} for m in messages[1:delete_trigger_count-n]]}")
+            app.update_state(config, {"messages": RemoveMessage(id=messages[0].id)})
             return {"messages": [RemoveMessage(id=m.id) for m in messages[1:delete_trigger_count-n]]} 
 
         messages_to_keep = messages[-n:]  # Keep last `n` messages
@@ -168,13 +171,13 @@ def init_graph():
         graph.add_node("delete_orphan_messages",remove_orphan_ai_messages)
         graph.add_node("agent", call_gw_model)
         graph.add_node("tools", tool_node)
-        graph.add_node(delete_messages)
+        #.add_node(delete_messages)
 
         graph.add_edge(START, "delete_orphan_messages")
         graph.add_edge("delete_orphan_messages", "agent")
-        graph.add_conditional_edges("agent", should_continue, ["tools", "delete_messages"])
+        graph.add_conditional_edges("agent", should_continue, ["tools", END])
         graph.add_edge("tools", "agent")
-        graph.add_edge("delete_messages", END)
+        #graph.add_edge("delete_messages", END)
         app = graph.compile(checkpointer=saver)
         return app
 
@@ -197,6 +200,7 @@ def lambda_handler(event, context):
         message = extract_whatsapp_messages(body)
         recipeint = extract_recipient(body)
         config = {"configurable": {"thread_id": recipeint}}
+        app.update_state(config, {"messages": RemoveMessage(id=messages[1].id)})
         print(f"Message recieved from {recipeint}:  {message}")
         input_message = {
             "messages": [
