@@ -89,7 +89,7 @@ def delete_messages(state: MessagesState, n=int(os.getenv("MSG_HISTORY_TO_KEEP")
         print_message_ids(messages)
         delete_trigger_count = int(os.environ.get("DELETE_TRIGGER_COUNT", 10))
 
-        if len(messages) <= n+delete_trigger_count:
+        if len(messages) <= delete_trigger_count:
             print(f"Total messages: {len(messages)}, nothing to delete")
             return {"messages": []}  # No deletion needed
         else:
