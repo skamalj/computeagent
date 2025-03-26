@@ -142,7 +142,7 @@ def delete_messages(state: MessagesState, n=int(os.getenv("MSG_HISTORY_TO_KEEP")
 def should_continue(state: MessagesState) -> str:
     last_message = state['messages'][-1]
     if not last_message.tool_calls:
-        return "delete_messages"
+        return END
     return 'tools'
 
 # Function to call the supervisor model
