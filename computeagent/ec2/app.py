@@ -185,7 +185,7 @@ app = init_graph()
 
 def lambda_handler(event, context):
 
-    messages = []
+    
     for record in event["Records"]:
         body = json.loads(record["body"])  # SQS message body
 
@@ -200,6 +200,7 @@ def lambda_handler(event, context):
         message = extract_whatsapp_messages(body)
         recipeint = extract_recipient(body)
         config = {"configurable": {"thread_id": recipeint}}
+        messages = app.get_state(config).values["messages"]
         app.update_state(config, {"messages": RemoveMessage(id=messages[1].id)})
         print(f"Message recieved from {recipeint}:  {message}")
         input_message = {
