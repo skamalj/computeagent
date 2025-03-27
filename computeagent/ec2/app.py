@@ -112,13 +112,13 @@ def call_gw_model(state):
 def init_graph():
     with DynamoDBSaver.from_conn_info(table_name="whatsapp_checkpoint", max_write_request_units=100,max_read_request_units=100) as saver:
         graph = StateGraph(PrunableMessagesState)
-        graph.add_node("delete_orphan_messages",remove_orphan_ai_messages)
+        #graph.add_node("delete_orphan_messages",remove_orphan_ai_messages)
         graph.add_node("agent", call_gw_model)
         graph.add_node("tools", tool_node)
         #.add_node(delete_messages)
 
-        graph.add_edge(START, "delete_orphan_messages")
-        graph.add_edge("delete_orphan_messages", "agent")
+        #graph.add_edge(START, "delete_orphan_messages")
+        graph.add_edge(START, "agent")
         graph.add_conditional_edges("agent", should_continue, ["tools", END])
         graph.add_edge("tools", "agent")
         #graph.add_edge("delete_messages", END)
