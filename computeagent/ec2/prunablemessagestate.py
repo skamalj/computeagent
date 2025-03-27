@@ -17,9 +17,10 @@ class Reducer:
         # Calculate excess messages to remove
         excess_count = len(messages) - self.min_messages
 
-        for i, msg in messages[1:excess_count]:
+        for i, msg in enumerate(messages[1:excess_count], start=1):
             if isinstance(msg, (AIMessage, HumanMessage)):
                 to_delete.add(i)
+
 
             # If AIMessage, find and mark associated ToolMessages
             if isinstance(messages[i], AIMessage) and hasattr(messages[i], 'tool_calls'):
