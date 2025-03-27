@@ -14,16 +14,12 @@ class Reducer:
             return messages
         # Identify AIMessage and HumanMessage indices to prune
         to_delete = set()
-        ai_human_indices = [i for i, msg in enumerate(messages) if isinstance(msg, (AIMessage, HumanMessage))]
-      
         # Calculate excess messages to remove
         excess_count = len(messages) - self.min_messages
 
-        # Loop through excess AI and Human messages to delete
-        for i in ai_human_indices[:excess_count]:
-            if isinstance(messages[i], HumanMessage):
+        for i, msg in messages[1:excess_count]:
+            if isinstance(msg, (AIMessage, HumanMessage)):
                 to_delete.add(i)
-                continue
 
             # If AIMessage, find and mark associated ToolMessages
             if isinstance(messages[i], AIMessage) and hasattr(messages[i], 'tool_calls'):
@@ -33,10 +29,10 @@ class Reducer:
                         if isinstance(messages[j], ToolMessage) and messages[j].tool_call_id == tool_call_id:
                             to_delete.add(j)
 
-
         # Delete messages in reverse order to avoid index shifting
         for idx in sorted(to_delete, reverse=True):
             del messages[idx]
+        print(f"Reduced messages from {len(messages) + excess_count} to {len(messages)}: {messages}")
         return messages
 
 reducer_instance = Reducer(min_messages=3, max_messages=4)
