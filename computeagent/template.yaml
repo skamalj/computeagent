@@ -107,6 +107,11 @@ Resources:
                 - rds:StopDBInstance      # Stop an RDS instance
               Resource: "*"  # You can restrict this to specific RDS instances if needed
         - Statement:
+            - Effect: Allow
+              Action:
+                - logs:DescribeLogStreams
+                - logs:GetLogEvents
+              Resource: "*"        - Statement:
             Effect: Allow
             Action:
               - dynamodb:CreateTable

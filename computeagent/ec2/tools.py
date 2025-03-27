@@ -283,3 +283,53 @@ def list_lambda_functions():
 
 tool_list.append(list_lambda_functions)
 
+
+@tool
+def retrieve_lambda_logs(function_name, start_time=None, end_time=None):
+    """
+    Retrieves logs for a specified AWS Lambda function within a given time range.
+
+    :param function_name: The name of the Lambda function.
+    :param start_time: The start time for log retrieval (optional).
+    :param end_time: The end time for log retrieval (optional).
+    :return: A list of log messages.
+    """
+    logs_client = boto3.client('logs')
+
+    # Get the log group name for the Lambda function
+    log_group_name = f"/aws/lambda/{function_name}"
+
+    # Define the time range for log retrieval
+    if start_time is None:
+        start_time = int((datetime.now() - timedelta(hours=1)).timestamp() * 1000)  # Default to last 1 hour
+    if end_time is None:
+        end_time = int(datetime.now().timestamp() * 1000)
+
+    # Fetch log streams
+    log_streams = logs_client.describe_log_streams(
+        logGroupName=log_group_name,
+        orderBy='LastEventTime',
+        descending=True
+    )['logStreams']
+
+    log_messages = []
+
+    # Retrieve logs from each stream
+    for stream in log_streams:
+        log_stream_name = stream['logStreamName']
+
+        events = logs_client.get_log_events(
+            logGroupName=log_group_name,
+            logStreamName=log_stream_name,
+            startTime=start_time,
+            endTime=end_time,
+            startFromHead=True
+        )['events']
+
+        for event in events:
+            log_messages.append(event['message'])
+
+    return log_messages
+
+tool_list.append(retrieve_lambda_logs)
+
