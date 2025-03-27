@@ -17,11 +17,13 @@ class Reducer:
         ai_human_indices = [i for i, msg in enumerate(messages) if isinstance(msg, (AIMessage, HumanMessage))]
       
         # Calculate excess messages to remove
-        excess_count = len(ai_human_indices) - self.min_messages
+        excess_count = len(messages) - self.min_messages
 
         # Loop through excess AI and Human messages to delete
         for i in ai_human_indices[:excess_count]:
-            to_delete.add(i)
+            if isinstance(messages[i], HumanMessage):
+                to_delete.add(i)
+                continue
 
             # If AIMessage, find and mark associated ToolMessages
             if isinstance(messages[i], AIMessage) and hasattr(messages[i], 'tool_calls'):
