@@ -1,0 +1,149 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  computeagent
+
+  SAM Template for computeagent with SQS trigger
+
+Globals:
+  Function:
+    Timeout: 20  # Increased timeout since SQS processing may take longer
+
+Parameters:
+  OpenAISecretName:
+    Type: String
+    Default: "OpenAIAPIKey"
+    Description: "Name of the secret in AWS Secrets Manager"
+  AzDevopsPat:
+    Type: String
+    Default: "AzDevopsPat"
+    Description: "Name of the secret in AWS Secrets Manager"
+  WhatsappAPISecretName:
+    Type: String
+    Default: "WhatsAppAPIToken"
+    Description: "Name of the secret in AWS Secrets Manager for whatsapp token"
+  ComputeAgentQueue:
+    Type: String
+    Default: "arn:aws:sqs:ap-south-1:010526271896:WhatsAppQueue"
+    Description: "Name of the SQS Queue"
+  ApiGWKey:
+    Type: String
+    Default: "ApiGWKey"
+    Description: "Name of the secret in AWS Secrets Manager"
+  ApiGWEndpoint:
+    Type: String
+    Default: "ApiGWEndpoint"
+    Description: "Name of the secret in AWS Secrets Manager"
+Resources:
+  # SQS Queue
+  LokiToJarvisQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: "LokiToJarvisQueue"
+      VisibilityTimeout: 30  # Ensure timeout is greater than Lambda execution time
+      MessageRetentionPeriod: 86400  # 1 day
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt LokiToJarvisDeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  # Dead Letter Queue (DLQ) for SQS
+  LokiToJarvisDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: "LokiToJarvisDeadLetterQueue"
+      MessageRetentionPeriod: 1209600  # Retain messages for 14 days
+
+  # Lambda Function
+  ComputeAgentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ec2/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      MemorySize: 512
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          OPENAI_API_KEY: !Sub "{{resolve:secretsmanager:${OpenAISecretName}}}"
+          MODEL_NAME: "gpt-4o"
+          PROVIDER_NAME: "openai"
+          MSG_HISTORY_TO_KEEP: 20
+          DELETE_TRIGGER_COUNT: 30
+          AZ_DEVOPS_PAT: !Sub "{{resolve:secretsmanager:${AzDevopsPat}}}"
+          LOKI_TO_JARVIS_QUEUE_URL: !Ref LokiToJarvisQueue
+          API_GW_URL: !Sub "{{resolve:secretsmanager:${ApiGWEndpoint}}}"
+          API_GW_KEY: !Sub "{{resolve:secretsmanager:${ApiGWKey}}}"
+      Events:
+        SQSMessage:
+          Type: SQS
+          Properties:
+            Queue: !Ref ComputeAgentQueue
+            BatchSize: 1  # Adjust based on workload (max 10)
+      Policies:
+        - SQSPollerPolicy:
+            QueueName: "WhatsAppQueue"
+        - AWSSecretsManagerGetSecretValuePolicy: 
+            SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${OpenAISecretName}-*"
+        - AWSSecretsManagerGetSecretValuePolicy: 
+            SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${WhatsappAPISecretName}-*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ec2:StartInstances
+                - ec2:StopInstances
+                - ec2:DescribeInstances
+              Resource: "*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - lambda:ListFunctions
+              Resource: "*" 
+        - Statement:
+            - Effect: Allow
+              Action:
+                - rds:DescribeDBInstances  # List RDS instances
+                - rds:StartDBInstance     # Start an RDS instance
+                - rds:StopDBInstance      # Stop an RDS instance
+              Resource: "*"  # You can restrict this to specific RDS instances if needed
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:CreateTable
+              - dynamodb:DeleteTable
+              - dynamodb:DescribeTable
+              - dynamodb:UpdateTable
+            Resource: "*"
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+              - dynamodb:GetItem
+              - dynamodb:Scan
+              - dynamodb:Query
+            Resource: "*" # Allow access to all tables in this account
+        - Statement:
+            Effect: Allow
+            Action:
+              - ce:GetCostAndUsage  # Grants permission to fetch billing data
+            Resource: "*"
+        - Statement:
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+            Resource: !GetAtt LokiToJarvisQueue.Arn
+
+Outputs:
+
+  ComputeAgentFunction:
+    Description: "Compute Agent Lambda Function ARN"
+    Value: !GetAtt ComputeAgentFunction.Arn
+
+  ComputeAgentFunctionIamRole:
+    Description: "IAM Role for Compute Agent Lambda Function"
+    Value: !GetAtt ComputeAgentFunctionRole.Arn

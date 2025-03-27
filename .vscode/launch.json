@@ -1,0 +1,39 @@
+{
+    "configurations": [
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "computeagent:HelloWorldFunction (python3.12)",
+            "invokeTarget": {
+                "target": "template",
+                "templatePath": "${workspaceFolder}/computeagent/template.yaml",
+                "logicalId": "HelloWorldFunction"
+            },
+            "lambda": {
+                "payload": {},
+                "environmentVariables": {},
+                "runtime": "python3.12"
+            }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "API computeagent:HelloWorldFunction (python3.12)",
+            "invokeTarget": {
+                "target": "api",
+                "templatePath": "${workspaceFolder}/computeagent/template.yaml",
+                "logicalId": "HelloWorldFunction"
+            },
+            "api": {
+                "path": "/hello",
+                "httpMethod": "get",
+                "payload": {
+                    "json": {}
+                }
+            },
+            "lambda": {
+                "runtime": "python3.12"
+            }
+        }
+    ]
+}
