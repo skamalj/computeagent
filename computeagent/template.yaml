@@ -96,7 +96,12 @@ Resources:
               Resource: "*"
         - Statement:
             - Effect: Allow
+        - Statement:
+            - Effect: Allow
               Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: "*"  # You can restrict this to specific email identities if needed              Action:
                 - lambda:ListFunctions
               Resource: "*" 
         - Statement:
