@@ -58,8 +58,8 @@ def init_graph():
         app = graph.compile(checkpointer=saver)
         return app
 
-min_number_of_messages_to_keep = os.environ.get("MSG_HISTORY_TO_KEEP", 10)
-max_number_of_messages_to_keep = os.environ.get("DELETE_TRIGGER_COUNT", 15)    
+min_number_of_messages_to_keep = int(os.environ.get("MSG_HISTORY_TO_KEEP", 10))
+max_number_of_messages_to_keep = int(os.environ.get("DELETE_TRIGGER_COUNT", 15))    
 PrunableMessagesState = PrunableStateFactory.create_prunable_state(min_number_of_messages_to_keep, max_number_of_messages_to_keep)   
 
 app = init_graph()
