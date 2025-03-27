@@ -4,14 +4,14 @@ from utils import extract_whatsapp_messages, extract_recipient
 # import requests
 
 from langchain_openai import ChatOpenAI
-from langgraph.graph import StateGraph, MessagesState, START, END
+from langgraph.graph import StateGraph,  START, END
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import SystemMessage, AIMessage, ToolMessage, HumanMessage
 from langgraph_dynamodb_checkpoint import DynamoDBSaver
 from langchain_core.messages import RemoveMessage
 from langgraph_utils import call_model, create_tools_json
 import os
-from prunablemessagestate import PrunableMessageState
+from prunablemessagestate import PrunableStateFactory
 
 model_name = model=os.getenv("MODEL_NAME")
 provider_name = os.getenv("PROVIDER_NAME")
@@ -29,7 +29,7 @@ def print_message_ids(messages):
         elif isinstance(msg, ToolMessage):
             print(f"ToolMessage - ID: {msg.id}, Tool Call ID: {msg.tool_call_id}")
 
-def remove_orphan_ai_messages(state: MessagesState):
+def remove_orphan_ai_messages(state):
     
     # Step 1: Identify orphan tool call IDs and their corresponding AIMessage IDs
     print("Identifying and removing orphan AI messages...")
@@ -82,72 +82,15 @@ def find_orphan_tool_calls_with_ai_message_ids(messages):
         print("No orphan tool call IDs found.")
 
     return orphan_tool_calls
-
-def delete_messages(state: MessagesState, n=int(os.getenv("MSG_HISTORY_TO_KEEP"))):
-    try:
-        messages = state["messages"]
-
-        # Print message IDs for debugging
-        print_message_ids(messages)
-        delete_trigger_count = int(os.environ.get("DELETE_TRIGGER_COUNT", 10))
-
-
-        if len(messages) <= delete_trigger_count:
-            print(f"Total messages: {len(messages)}, nothing to delete")
-            return {"messages": []}  # No deletion needed
-        else:
-            print(f"Total messages: {len(messages)}, deleting all except last {n} messages.")
-            print(f"Triggering deletion for {delete_trigger_count} messages. {[{m.id: m.content} for m in messages[1:delete_trigger_count-n]]}")
-            app.update_state(config, {"messages": RemoveMessage(id=messages[0].id)})
-            return {"messages": [RemoveMessage(id=m.id) for m in messages[1:delete_trigger_count-n]]} 
-
-        messages_to_keep = messages[-n:]  # Keep last `n` messages
-        messages_to_remove = messages[:-n]  # Messages to be removed
-
-        # Step 1: Collect AIMessage IDs and tool call IDs
-        ai_messages = [m for m in messages_to_remove if isinstance(m, AIMessage)]
-        ai_message_ids = [m.id for m in ai_messages]  # AIMessage IDs for removal
-        tool_call_ids = [
-                tc['id'] 
-                for msg in ai_messages 
-                if hasattr(msg, "tool_calls") and msg.tool_calls 
-                for tc in msg.tool_calls
-            ]    # Tool call IDs
-        print(f"Deleting these AIMessages: {ai_message_ids}, Tool call IDs: {tool_call_ids}")
-
-        # Step 2: Collect tool message IDs by checking tool_call_id
-        tool_messages = [m for m in messages if isinstance(m, ToolMessage) and m.tool_call_id in tool_call_ids]
-        tool_message_ids = [m.id for m in tool_messages]  # Get IDs of tool messages to remove
-        print(f"Deleting these ToolMessages: {tool_message_ids}")
-
-        # Step 3: Identify human messages for removal
-        human_messages = [m for m in messages_to_remove if isinstance(m, HumanMessage)]
-        human_message_ids = [m.id for m in human_messages]  # Get IDs of human messages to remove
-
-        # Step 4: Ensure all tool calls have corresponding tool messages
-        found_tool_call_ids = [m.tool_call_id for m in tool_messages]
-        missing_tool_call_ids = set(tool_call_ids) - set(found_tool_call_ids)  # Find missing tool call IDs
-        print(f"Tool call IDs: {tool_call_ids}, Found tool call IDs: {found_tool_call_ids}")
-        if missing_tool_call_ids:
-            print(f"Warning: Missing tool messages for tool call IDs: {missing_tool_call_ids}")
-
-        # Step 5: Collect all message IDs to remove using `+`
-        all_ids_to_remove = ai_message_ids + tool_message_ids + human_message_ids  # List concatenation
-        print(f"Removing these messages: {all_ids_to_remove}")
-
-        return {"messages": [RemoveMessage(id=m_id) for m_id in all_ids_to_remove]} # Simulating RemoveMessage
-    except Exception as e:
-        print(f"Error deleting messages: {e}, Total messages {len(messages)}")
-        return {"messages": []}
     
-def should_continue(state: MessagesState) -> str:
+def should_continue(state) -> str:
     last_message = state['messages'][-1]
     if not last_message.tool_calls:
         return END
     return 'tools'
 
 # Function to call the supervisor model
-def call_gw_model(state: MessagesState): 
+def call_gw_model(state): 
     with open("agent_prompt.txt", "r", encoding="utf-8") as file:
         system_message = file.read()
         messages = state["messages"]
@@ -168,7 +111,7 @@ def call_gw_model(state: MessagesState):
 
 def init_graph():
     with DynamoDBSaver.from_conn_info(table_name="whatsapp_checkpoint", max_write_request_units=100,max_read_request_units=100) as saver:
-        graph = StateGraph(MessagesState)
+        graph = StateGraph(PrunableMessagesState)
         graph.add_node("delete_orphan_messages",remove_orphan_ai_messages)
         graph.add_node("agent", call_gw_model)
         graph.add_node("tools", tool_node)
@@ -181,6 +124,8 @@ def init_graph():
         #graph.add_edge("delete_messages", END)
         app = graph.compile(checkpointer=saver)
         return app
+    
+PrunableMessagesState = PrunableStateFactory.create_prunable_state(10, 15)   
 
 app = init_graph()
 

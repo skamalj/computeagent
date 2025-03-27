@@ -10,30 +10,30 @@ class Reducer:
 
     def reduce_messages(self, messages=[], message=None):
         messages = messages + message
-        print(len(messages))
         if self.max_messages is None or len(messages) <= self.max_messages:
             return messages
         # Identify AIMessage and HumanMessage indices to prune
         to_delete = set()
         ai_human_indices = [i for i, msg in enumerate(messages) if isinstance(msg, (AIMessage, HumanMessage))]
-        print("############################")
+      
         # Calculate excess messages to remove
-        excess_count = len(ai_human_indices) - self.max_messages
+        excess_count = len(ai_human_indices) - self.min_messages
 
         # Loop through excess AI and Human messages to delete
         for i in ai_human_indices[:excess_count]:
             to_delete.add(i)
 
             # If AIMessage, find and mark associated ToolMessages
-            if isinstance(messages[i], AIMessage):
-                tool_call_id = messages[i].tool_call_id
-                for j in range(i + 1, len(self.messages)):
-                    if isinstance(messages[j], ToolMessage) and messages[j].tool_call_id == tool_call_id:
-                        to_delete.add(j)
+            if isinstance(messages[i], AIMessage) and hasattr(messages[i], 'tool_calls'):
+                for tool_call in messages[i].tool_calls:
+                    tool_call_id = tool_call.get("id")
+                    for j in range(i + 1, len(messages)):
+                        if isinstance(messages[j], ToolMessage) and messages[j].tool_call_id == tool_call_id:
+                            to_delete.add(j)
+
 
         # Delete messages in reverse order to avoid index shifting
         for idx in sorted(to_delete, reverse=True):
-            print(messages[idx])
             del messages[idx]
         return messages
 
@@ -62,9 +62,11 @@ random_messages = [
     "Let's dive into it!"
 ]
 
-def node(state:  PrunableMessageState):
+def node(state):
     new_message = AIMessage(random.choice(random_messages))
-    return {"messages": [new_message, new_message, new_message, new_message]}
+    new_message2 = AIMessage(random.choice(random_messages))
+    new_message3 = AIMessage(random.choice(random_messages))
+    return {"messages": [new_message, new_message, new_message, new_message2, new_message3]}
 
 graph_builder = StateGraph(PrunableMessageState)
 graph_builder.add_node(node)
