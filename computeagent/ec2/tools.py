@@ -283,3 +283,50 @@ def list_lambda_functions():
 
 tool_list.append(list_lambda_functions)
 
+
+@tool
+def send_logs_via_email(logs, email_addresses, format='TXT'):
+    """
+    Sends selected logs as email attachments in the specified format.
+
+    :param logs: The logs to be sent.
+    :param email_addresses: List of email addresses to send the logs to.
+    :param format: The format of the log attachment (TXT, CSV, PDF).
+    :return: Confirmation message or error details.
+    """
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    from email.mime.base import MIMEBase
+    from email import encoders
+    import os
+
+    # Validate format
+    if format not in ['TXT', 'CSV', 'PDF']:
+        return "Invalid format specified. Choose from TXT, CSV, or PDF."
+
+    # Create email
+    msg = MIMEMultipart()
+    msg['From'] = os.getenv('EMAIL_SENDER')
+    msg['To'] = ", ".join(email_addresses)
+    msg['Subject'] = "Logs Attachment"
+
+    # Attach logs
+    attachment = MIMEBase('application', 'octet-stream')
+    attachment.set_payload(logs.encode('utf-8'))
+    encoders.encode_base64(attachment)
+    attachment.add_header('Content-Disposition', f'attachment; filename="logs.{format.lower()}"')
+    msg.attach(attachment)
+
+    # Send email
+    try:
+        with smtplib.SMTP(os.getenv('SMTP_SERVER'), int(os.getenv('SMTP_PORT'))) as server:
+            server.starttls()
+            server.login(os.getenv('EMAIL_SENDER'), os.getenv('EMAIL_PASSWORD'))
+            server.send_message(msg)
+        return "Logs sent successfully."
+    except Exception as e:
+        return f"Failed to send logs: {str(e)}"
+
+tool_list.append(send_logs_via_email)
+
