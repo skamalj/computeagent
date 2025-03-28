@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from ec2 import app
+from operator import app
 
 
 @pytest.fixture()

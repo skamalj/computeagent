@@ -9,6 +9,7 @@ class Reducer:
         self.max_messages = max_messages
 
     def reduce_messages(self, messages=[], message=None):
+        
         messages = messages + message
         if self.max_messages is None or len(messages) <= self.max_messages:
             return messages
@@ -29,7 +30,7 @@ class Reducer:
                     for j in range(i + 1, len(messages)):
                         if isinstance(messages[j], ToolMessage) and messages[j].tool_call_id == tool_call_id:
                             to_delete.add(j)
-
+                            
         # Delete messages in reverse order to avoid index shifting
         for idx in sorted(to_delete, reverse=True):
             del messages[idx]

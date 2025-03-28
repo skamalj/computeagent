@@ -22,9 +22,9 @@ Parameters:
     Type: String
     Default: "WhatsAppAPIToken"
     Description: "Name of the secret in AWS Secrets Manager for whatsapp token"
-  ComputeAgentQueue:
+  TriggeringSQSQueue:
     Type: String
-    Default: "arn:aws:sqs:ap-south-1:010526271896:WhatsAppQueue"
+    Default: "arn:aws:sqs:ap-south-1:010526271896:UnifiedChannelQueue"
     Description: "Name of the SQS Queue"
   ApiGWKey:
     Type: String
@@ -57,10 +57,11 @@ Resources:
   ComputeAgentFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ec2/
+      CodeUri: operator/
       Handler: app.lambda_handler
       Runtime: python3.12
       MemorySize: 512
+      Timeout: 60
       Architectures:
         - x86_64
       Environment:
@@ -78,11 +79,9 @@ Resources:
         SQSMessage:
           Type: SQS
           Properties:
-            Queue: !Ref ComputeAgentQueue
+            Queue: !Ref TriggeringSQSQueue
             BatchSize: 1  # Adjust based on workload (max 10)
       Policies:
-        - SQSPollerPolicy:
-            QueueName: "WhatsAppQueue"
         - AWSSecretsManagerGetSecretValuePolicy: 
             SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${OpenAISecretName}-*"
         - AWSSecretsManagerGetSecretValuePolicy: 
@@ -113,6 +112,12 @@ Resources:
               - dynamodb:DeleteTable
               - dynamodb:DescribeTable
               - dynamodb:UpdateTable
+            Resource: "*"
+        - Statement:
+            Effect: Allow
+            Action:
+              - ses:SendEmail
+              - ses:SendRawEmail
             Resource: "*"
         - Statement:
             Effect: Allow

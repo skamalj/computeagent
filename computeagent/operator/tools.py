@@ -114,7 +114,7 @@ def send_whatsapp_message(recipient, message):
     :param recipient: The recipient's phone number.
     :return: The JSON response from the API call.
     """
-    access_token = get_secret()  # Fetch token from Secrets Manager
+    access_token = get_secret("WhatsAppAPIToken")  # Fetch token from Secrets Manager
     if not access_token:
         print("Failed to retrieve access token.")
         return None
@@ -265,9 +265,15 @@ tool_list += [list_rds_instances, start_rds_instance, stop_rds_instance, create_
 @tool
 def list_lambda_functions():
     """
-    Lists all AWS Lambda functions with their names and statuses.
+    Retrieves metadata for AWS Lambda functions (supports queries using: 'AWS Lambda', 'Lambda functions', or 'serverless functions').
 
-    :return: A list of dictionaries containing 'FunctionName' and 'State'.
+    Returns:
+        list[dict]: Each dictionary contains:
+            - 'FunctionName' (str): Name of the function
+            - 'State' (str): Current status (e.g., 'Active', 'Unknown', etc.)
+
+    Note:
+        The tool now accepts multiple synonymous terms for AWS Lambda functions.
     """
     lambda_client = boto3.client('lambda')
     response = lambda_client.list_functions()
@@ -283,3 +289,51 @@ def list_lambda_functions():
 
 tool_list.append(list_lambda_functions)
 
+@tool
+def send_email_via_ses(email_json: str):
+    """
+    Sends an email using AWS SES.
+    
+    Expected JSON format:
+    {
+        "to_email": "recipient@example.com",
+        "subject": "Subject Line",
+        "body": "Email body content",
+        "is_html": false
+    }
+
+    :param email_json: JSON string containing email details.
+    :return: Response message indicating success or failure.
+    """
+    try:
+        # Parse JSON input
+        email_data = json.loads(email_json)
+        to_email = email_data.get("to_email")
+        subject = email_data.get("subject", "No Subject")
+        body = email_data.get("body", "")
+        is_html = email_data.get("is_html", False)
+
+        # Ensure required fields are present
+        if not to_email or not body:
+            return "Error: Missing required fields ('to_email' or 'body')."
+
+        # Construct email body (HTML or plain text)
+        message_body = {"Html": {"Data": body}} if is_html else {"Text": {"Data": body}}
+        ses_client = boto3.client("ses")
+        FROM_EMAIL = os.getenv("EMAIL_FROM", "agent@mockify.com")
+        # Send email via AWS SES
+        response = ses_client.send_email(
+            Source=FROM_EMAIL,
+            Destination={"ToAddresses": [to_email]},
+            Message={
+                "Subject": {"Data": subject},
+                "Body": message_body,
+            },
+        )
+        return f"Email sent successfully! Message ID: {response['MessageId']}"
+
+    except Exception as e:
+        return f"Error sending email: {str(e)}"
+
+
+tool_list.append(send_email_via_ses)
