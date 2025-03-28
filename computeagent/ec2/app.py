@@ -84,7 +84,7 @@ def lambda_handler(event, context):
         print(f"Message recieved from {recipeint}:  {message}")
         input_message = {
             "messages": [
-                HumanMessage(f"Message recieved from Whatsapp user {recipeint}:  {message}"),
+                HumanMessage(f"Respond to the following user query on user's WhatsApp number {recipeint}:  {message}"),
             ]
         }
         response = app.invoke(input_message, config)
