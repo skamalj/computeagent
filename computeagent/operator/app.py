@@ -20,7 +20,7 @@ tool_node = ToolNode(tools=tool_list)
 def should_continue(state) -> str:
     last_message = state['messages'][-1]
     if not last_message.tool_calls:
-        return "tools"
+        return END
     return 'tools'
 
 # Function to call the supervisor model
