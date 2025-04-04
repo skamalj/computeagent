@@ -20,7 +20,7 @@ tool_node = ToolNode(tools=tool_list)
 def should_continue(state) -> str:
     last_message = state['messages'][-1]
     if not last_message.tool_calls:
-        return "print_messages_exit"
+        return "tools"
     return 'tools'
 
 # Function to call the supervisor model
@@ -41,7 +41,7 @@ def call_gw_model(state):
         return {"messages": [response]}
 
 def init_graph():
-    with DynamoDBSaver.from_conn_info(table_name="whatsapp_checkpoint", max_write_request_units=100,max_read_request_units=100) as saver:
+    with DynamoDBSaver.from_conn_info(table_name="whatsapp_checkpoint", max_write_request_units=100,max_read_request_units=100, ttl_seconds=86400) as saver:
         graph = StateGraph(PrunableMessagesState)
         
         graph.add_node("agent", call_gw_model)
