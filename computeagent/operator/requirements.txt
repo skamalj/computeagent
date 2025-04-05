@@ -6,3 +6,4 @@ langgraph>=0.2.74
 langchain>=0.3.19
 langgraph_dynamodb_checkpoint>=0.2.0
 langgraph-utils
+langgraph-reducer
