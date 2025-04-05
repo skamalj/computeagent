@@ -8,7 +8,7 @@ from langchain_core.messages import SystemMessage,  HumanMessage
 from langgraph_dynamodb_checkpoint import DynamoDBSaver
 from langgraph_utils import call_model, create_tools_json
 import os
-from prunablemessagestate import PrunableStateFactory
+from langgraph_reducer import PrunableStateFactory
 import boto3
 
 model_name = model=os.getenv("MODEL_NAME")

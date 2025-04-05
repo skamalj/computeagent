@@ -293,14 +293,17 @@ tool_list.append(list_lambda_functions)
 def send_email_via_ses(email_json: str):
     """
     Sends an email using AWS SES.
-    
+
     Expected JSON format:
     {
         "to_email": "recipient@example.com",
         "subject": "Subject Line",
         "body": "Email body content",
-        "is_html": false
+        "is_html": false  # Set to true to enable HTML formatting for a better-looking report
     }
+
+    Note:
+    For visually appealing, well-formatted reports (e.g., tables, styled text), set "is_html" to true and use HTML in the "body".
 
     :param email_json: JSON string containing email details.
     :return: Response message indicating success or failure.
