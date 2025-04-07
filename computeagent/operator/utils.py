@@ -11,7 +11,7 @@ def get_secret(secret_name):
     try:
         response = client.get_secret_value(SecretId=secret_name)
         secret_data = json.loads(response["SecretString"])
-        return secret_data.get("ACCESS_TOKEN")
+        return secret_data
     except Exception as e:
         print(f"Error fetching secret: {e}")
         return None
