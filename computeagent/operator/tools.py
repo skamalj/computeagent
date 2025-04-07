@@ -115,11 +115,12 @@ def send_whatsapp_message(recipient, message):
     :return: The JSON response from the API call.
     """
     access_token = get_secret("WhatsAppAPIToken")  # Fetch token from Secrets Manager
+    whatsapp_number_id = get_secret("WhatsappNumberID")  # Fetch WhatsApp number ID from Secrets Manager
     if not access_token:
         print("Failed to retrieve access token.")
         return None
     
-    url = "https://graph.facebook.com/v22.0/122101510484012147/messages"
+    url = f"https://graph.facebook.com/v22.0/{whatsapp_number_id}/messages"
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
