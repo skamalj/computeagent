@@ -24,7 +24,7 @@ Parameters:
     Description: "Name of the secret in AWS Secrets Manager for whatsapp token"
   WhatsappNumberIDSecretname:
     Type: String
-    Default: "WhatsAppNumberID"
+    Default: "WhatsappNumberID"
     Description: "Name of the secret in AWS Secrets Manager for whatsapp Number ID"
   TriggeringSQSQueue:
     Type: String
@@ -91,7 +91,7 @@ Resources:
         - AWSSecretsManagerGetSecretValuePolicy: 
             SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${WhatsappAPISecretName}-*"
         - AWSSecretsManagerGetSecretValuePolicy: 
-            SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${WhatsappNumberIDSecretname}-*"
+            SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:WhatsappNumberID-*"
         - Statement:
             - Effect: Allow
               Action:
