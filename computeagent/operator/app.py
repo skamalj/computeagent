@@ -13,6 +13,7 @@ import boto3
 
 model_name = model=os.getenv("MODEL_NAME")
 provider_name = os.getenv("PROVIDER_NAME")
+stepfunctions = boto3.client("stepfunctions")
 
 tool_node = ToolNode(tools=tool_list)
 
@@ -83,54 +84,87 @@ def get_all_userids_and_channels(profile_id):
     items = response.get("Items", [])
     return [(item["userid"], item["channel"]) for item in items]
 
+def handle_message(channel_type, recipient, message):
+    # Step 1: Get profile_id for this user
+    profile_id = get_profile_id(recipient)
+    if not profile_id:
+        print(f"No profile found for user: {recipient}, skipping.")
+        return None
+
+    # Step 2: Get all associated userids & channels
+    user_profiles = get_all_userids_and_channels(profile_id)
+
+    # Format profiles for the prompt
+    profile_info = "\n".join(
+        [f"- UserID: {uid}, Channel: {ch}" for uid, ch in user_profiles]
+    )
+
+    print(f"User Profiles for {recipient}: \n{profile_info}")
+
+    # Step 3: Construct the prompt
+    prompt = (
+        f"The following user has sent a message:\n"
+        f"- UserID: {recipient}\n"
+        f"- Message: {message}\n"
+        f"- Sent via: {channel_type}\n\n"
+        f"Here are all associated user profiles:\n"
+        f"{profile_info}\n\n"
+        f"Respond to user queries either on the originating channel or on the channel explicitly specified in the request.."
+    )
+
+    input_message = {
+        "messages": [HumanMessage(prompt)],
+    }
+
+    config = {"configurable": {"thread_id": profile_id}}
+    response = app.invoke(input_message, config)
+    print("Response:", response)
+
+    return {
+        "nextagent": "END",  # or another agent name if chaining
+        "message": response["messages"][-1].content,
+        "thread_id": profile_id,
+        "channel_type": channel_type,
+        "from": recipient
+    }
+
 def lambda_handler(event, context):
-    for record in event["Records"]:
-        body = json.loads(record["body"])  # SQS message body
+    print("Received event:", json.dumps(event, indent=2))
 
-        # Extract required fields
-        channel_type = body.get("channel_type")  # WhatsApp, Email, etc.
-        recipient = body.get("from")  # User ID (userid)
-        message = body.get("messages")  # User's query
+    # Handle Step Function event with task token
+    if "taskToken" in event and "input" in event:
+        task_token = event["taskToken"]
+        input_data = event["input"]
+        channel_type = input_data.get("channel_type")
+        recipient = input_data.get("from")
+        message = input_data.get("message")
 
-        # Validate required fields
-        if not all([channel_type, recipient, message]):
-            print("Skipping message due to missing fields")
-            continue  # Skip this record
+        result = handle_message(channel_type, recipient, message)
+        if result:
+            stepfunctions.send_task_success(
+                taskToken=task_token,
+                output=json.dumps(result)
+            )
+        else:
+            stepfunctions.send_task_failure(
+                taskToken=task_token,
+                error="UserProfileError",
+                cause="Missing profile or invalid input."
+            )
+        return
 
-        # Step 1: Get profile_id for this user
-        profile_id = get_profile_id(recipient)
-        if not profile_id:
-            print(f"No profile found for user: {recipient}, skipping.")
-            continue
+    # Handle SQS event
+    if "Records" in event:
+        for record in event["Records"]:
+            body = json.loads(record["body"])
+            channel_type = body.get("channel_type")
+            recipient = body.get("from")
+            message = body.get("messages")
 
-        # Step 2: Get all associated userids & channels
-        user_profiles = get_all_userids_and_channels(profile_id)
+            if not all([channel_type, recipient, message]):
+                print("Skipping message due to missing fields")
+                continue
 
-        # Format profiles for the prompt
-        profile_info = "\n".join(
-            [f"- UserID: {uid}, Channel: {ch}" for uid, ch in user_profiles]
-        )
-
-        print(f"User Profiles for {recipient}: \n{profile_info}")
-
-        # Step 3: Construct the prompt
-        prompt = (
-            f"The following user has sent a message:\n"
-            f"- UserID: {recipient}\n"
-            f"- Message: {message}\n"
-            f"- Sent via: {channel_type}\n\n"
-            f"Here are all associated user profiles:\n"
-            f"{profile_info}\n\n"
-            f"Respond to user queries either on the originating channel or on the channel explicitly specified in the request.."
-        )
-
-        input_message = {
-            "messages": [HumanMessage(prompt)],
-        }
-
-        config = {"configurable": {"thread_id": profile_id}}
-        response = app.invoke(input_message, config)
-
-        print("Response:", response)
+            handle_message(channel_type, recipient, message)
 
     return
