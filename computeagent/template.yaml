@@ -83,7 +83,7 @@ Resources:
         SQSMessage:
           Type: SQS
           Properties:
-            Queue: !Ref TriggeringSQSQueue
+            Queue: !Sub "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:RouterQueue"
             BatchSize: 1  # Adjust based on workload (max 10)
       Policies:
         - AWSSecretsManagerGetSecretValuePolicy: 
