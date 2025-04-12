@@ -149,6 +149,12 @@ Resources:
               - sqs:DeleteMessage
               - sqs:GetQueueAttributes
             Resource: !GetAtt LokiToJarvisQueue.Arn
+        - Statement:
+          - Effect: Allow
+            Action:
+              - states:SendTaskSuccess
+              - states:SendTaskFailure
+            Resource: "*"  # Or restrict to specific state machine ARNs if you prefer
 
 Outputs:
 
