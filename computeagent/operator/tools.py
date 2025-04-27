@@ -9,6 +9,7 @@ import json
 import os
 import base64
 from natgateway import create_nat_gateway_for_vpc_name, delete_all_available_nat_gateways_for_vpc_name
+import threading
 
 @tool
 def start_ec2_instance(instance_id):
@@ -361,7 +362,9 @@ def create_nat_gateway(vpc_name_tag: str):
     Note:
         This tool intelligently identifies public and private subnets by checking for internet gateway association.
     """
-    return create_nat_gateway_for_vpc_name(vpc_name_tag)
+    thread = threading.Thread(target=create_nat_gateway_for_vpc_name, args=(vpc_name_tag,))
+    thread.start()
+    return {"status": "started", "operation": "create_nat_gateway", "vpc_name_tag": vpc_name_tag}
 
 tool_list.append(create_nat_gateway)
 
@@ -381,6 +384,8 @@ def delete_nat_gateway(vpc_name_tag: str):
     Note:
         Assumes there is only one NAT Gateway per VPC.
     """
-    return delete_all_available_nat_gateways_for_vpc_name(vpc_name_tag)
+    thread = threading.Thread(target=delete_all_available_nat_gateways_for_vpc_name, args=(vpc_name_tag,))
+    thread.start()
+    return {"status": "started", "operation": "delete_nat_gateway", "vpc_name_tag": vpc_name_tag}
 
 tool_list.append(delete_nat_gateway)
