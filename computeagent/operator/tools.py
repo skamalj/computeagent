@@ -8,6 +8,7 @@ import boto3
 import json
 import os
 import base64
+from natgateway import create_nat_gateway_for_vpc_name, delete_all_available_nat_gateways_for_vpc_name
 
 @tool
 def start_ec2_instance(instance_id):
@@ -341,3 +342,45 @@ def send_email_via_ses(email_json: str):
 
 
 tool_list.append(send_email_via_ses)
+
+@tool
+def create_nat_gateway(vpc_name_tag: str):
+    """
+    Creates a NAT Gateway in the public subnet of a VPC identified by its 'Name' tag.
+    Also updates route tables of private subnets to use the created NAT Gateway.
+
+    Args:
+        vpc_name_tag (str): The 'Name' tag of the target VPC.
+
+    Returns:
+        dict: Details of the created NAT Gateway:
+            - 'NatGatewayId' (str): ID of the new NAT Gateway
+            - 'SubnetId' (str): Public subnet where the NAT Gateway is created
+            - 'PrivateSubnetsUpdated' (list[str]): List of private subnet IDs where routes were updated
+
+    Note:
+        This tool intelligently identifies public and private subnets by checking for internet gateway association.
+    """
+    return create_nat_gateway_for_vpc_name(vpc_name_tag)
+
+tool_list.append(create_nat_gateway)
+
+@tool
+def delete_nat_gateway(vpc_name_tag: str):
+    """
+    Deletes all NAT Gateways and associated Elastic IP for a VPC identified by its 'Name' tag.
+
+    Args:
+        vpc_name_tag (str): The 'Name' tag of the target VPC.
+
+    Returns:
+        dict: Details of deleted resources:
+            - 'NatGatewayId' (str): ID of the deleted NAT Gateway
+            - 'ElasticIpAllocationId' (str): ID of the released Elastic IP
+
+    Note:
+        Assumes there is only one NAT Gateway per VPC.
+    """
+    return delete_all_available_nat_gateways_for_vpc_name(vpc_name_tag)
+
+tool_list.append(delete_nat_gateway)
