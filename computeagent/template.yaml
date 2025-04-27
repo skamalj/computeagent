@@ -155,6 +155,11 @@ Resources:
               - states:SendTaskSuccess
               - states:SendTaskFailure
             Resource: "*"  # Or restrict to specific state machine ARNs if you prefer
+        - Statement:
+          - Effect: Allow
+            Action:
+              - ec2:*
+            Resource: "*"
 
 Outputs:
 
