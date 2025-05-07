@@ -121,6 +121,7 @@ def handle_message(channel_type, recipient, message):
     print("Response:", response)
 
     return {
+        "fromagent": "awsagent",  # Identifying this agent
         "nextagent": "END",  # or another agent name if chaining
         "message": response["messages"][-1].content,
         "thread_id": profile_id,
