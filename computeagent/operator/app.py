@@ -118,12 +118,21 @@ def handle_message(channel_type, recipient, message):
 
     config = {"configurable": {"thread_id": profile_id}}
     response = app.invoke(input_message, config)
-    print("Response:", response)
+    print("Unparsed Response History - last 7:", response["messages"][-7:])
+    # Step 4: Parse response from Comms-Agent and construct final return response
+    agent_response = response["messages"][-1].content
+    print("Unparsed Response:", agent_response)
+
+    # Assuming the comms_agent_response is in the format:
+    # {"nextagent": "END", "message": "User-facing message delivered"}
+    parsed_response = json.loads(agent_response)
+
+    print("Response:", parsed_response)
 
     return {
         "fromagent": "awsagent",  # Identifying this agent
-        "nextagent": "END",  # or another agent name if chaining
-        "message": response["messages"][-1].content,
+        "nextagent": parsed_response.get("nextagent", ""),  # or another agent name if chaining
+        "message": parsed_response.get("message", ""),
         "thread_id": profile_id,
         "channel_type": channel_type,
         "from": recipient
