@@ -1,5 +1,6 @@
 import boto3
 import time
+import botocore.exceptions
 
 def find_vpc_by_name(ec2_resource, vpc_name_tag):
     vpcs = list(ec2_resource.vpcs.filter(Filters=[{'Name': 'tag:Name', 'Values': [vpc_name_tag]}]))
@@ -131,9 +132,36 @@ def find_nat_gateways_for_vpc(client, vpc_id):
     nat_gateways = client.describe_nat_gateways(Filters=[{'Name': 'vpc-id', 'Values': [vpc_id]}])['NatGateways']
     return nat_gateways
 
+
 def delete_nat_gateway(client, nat_gateway_id):
     print(f"Deleting NAT Gateway {nat_gateway_id}...")
-    client.delete_nat_gateway(NatGatewayId=nat_gateway_id)
+
+    try:
+        # Get the EIP allocation ID associated with the NAT Gateway
+        response = client.describe_nat_gateways(NatGatewayIds=[nat_gateway_id])
+        nat_gw = response['NatGateways'][0]
+        eip_allocation_id = nat_gw['NatGatewayAddresses'][0].get('AllocationId')
+
+        # Delete the NAT Gateway
+        client.delete_nat_gateway(NatGatewayId=nat_gateway_id)
+
+        # Wait for deletion to complete
+        print("Waiting for NAT Gateway to be deleted...")
+        waiter = client.get_waiter('nat_gateway_deleted')
+        waiter.wait(NatGatewayIds=[nat_gateway_id])
+        print("NAT Gateway deleted.")
+
+        # Release associated Elastic IP
+        if eip_allocation_id:
+            print(f"Releasing EIP Allocation ID {eip_allocation_id}...")
+            client.release_address(AllocationId=eip_allocation_id)
+            print("Elastic IP released.")
+        else:
+            print("No associated EIP found to release.")
+
+    except botocore.exceptions.ClientError as e:
+        print(f"Error during NAT Gateway deletion: {e}")
+
 
 def wait_for_natgw_deletion(client, nat_gateway_id, timeout=600):
     print(f"Waiting for NAT Gateway {nat_gateway_id} to be deleted...")
