@@ -362,9 +362,8 @@ def create_nat_gateway(vpc_name_tag: str):
     Note:
         This tool intelligently identifies public and private subnets by checking for internet gateway association.
     """
-    thread = threading.Thread(target=create_nat_gateway_for_vpc_name, args=(vpc_name_tag,))
-    thread.start()
-    return {"status": "started", "operation": "create_nat_gateway", "vpc_name_tag": vpc_name_tag}
+    create_nat_gateway_for_vpc_name(vpc_name_tag)
+    return {"status": "Finished", "operation": "create_nat_gateway", "vpc_name_tag": vpc_name_tag}
 
 tool_list.append(create_nat_gateway)
 
@@ -384,8 +383,7 @@ def delete_nat_gateway(vpc_name_tag: str):
     Note:
         Assumes there is only one NAT Gateway per VPC.
     """
-    thread = threading.Thread(target=delete_all_available_nat_gateways_for_vpc_name, args=(vpc_name_tag,))
-    thread.start()
-    return {"status": "started", "operation": "delete_nat_gateway", "vpc_name_tag": vpc_name_tag}
+    delete_all_available_nat_gateways_for_vpc_name(vpc_name_tag)
+    return {"status": "Finished", "operation": "delete_nat_gateway", "vpc_name_tag": vpc_name_tag}
 
 tool_list.append(delete_nat_gateway)

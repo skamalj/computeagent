@@ -219,4 +219,4 @@ def delete_all_available_nat_gateways_for_vpc_name(vpc_name_tag: str):
     }
 
 #create_nat_gateway_for_vpc_name("mcp-vpc")
-delete_all_available_nat_gateways_for_vpc_name("mcp-vpc")
+#delete_all_available_nat_gateways_for_vpc_name("mcp-vpc")
