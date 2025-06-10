@@ -111,14 +111,15 @@ Resources:
               Action:
                 - logs:DescribeLogStreams
                 - logs:GetLogEvents
-              Resource: "*"        - Statement:
-            Effect: Allow
-            Action:
-              - dynamodb:CreateTable
-              - dynamodb:DeleteTable
-              - dynamodb:DescribeTable
-              - dynamodb:UpdateTable
-            Resource: "*"
+              Resource: "*"        
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:CreateTable
+                - dynamodb:DeleteTable
+                - dynamodb:DescribeTable
+                - dynamodb:UpdateTable
+              Resource: "*"
         - Statement:
             Effect: Allow
             Action:
